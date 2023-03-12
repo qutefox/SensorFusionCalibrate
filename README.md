@@ -1,4 +1,4 @@
-# Sensor Fusion Calibrate
+# Work in progress
 
 The aim of this project is to give an interactive way of calibrating the following sensors:
 - accelerometer
