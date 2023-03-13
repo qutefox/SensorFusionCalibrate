@@ -7,11 +7,13 @@ class TerminalData
 {
 public:
     TerminalData(const QByteArray& data);
+    bool hasMoreChar();
     QChar getNextChar();
     const QString& getData() const;
     QString getRemainingData() const;
     void setIndex(qsizetype index);
     qsizetype getIndex() const;
+    void moveIndexByOffset(qsizetype offset);
     void reset();
 
 private:

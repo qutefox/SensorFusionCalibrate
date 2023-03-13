@@ -8,6 +8,11 @@ TerminalData::TerminalData(const QByteArray& data)
 
 }
 
+bool TerminalData::hasMoreChar()
+{
+    return m_data.size() > m_index;
+}
+
 QChar TerminalData::getNextChar()
 {
     if (m_data.size() <= m_index)
@@ -35,6 +40,12 @@ void TerminalData::setIndex(qsizetype index)
 qsizetype TerminalData::getIndex() const
 {
     return m_index;
+}
+
+void TerminalData::moveIndexByOffset(qsizetype offset)
+{
+    m_index += offset;
+    if (m_index < 0) m_index = 0;
 }
 
 void TerminalData::reset()

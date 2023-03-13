@@ -9,24 +9,23 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    ansiescape.cpp \
     application.cpp \
     dataitem.cpp \
     main.cpp \
     mainwindow.cpp \
-    terminal.cpp \
-    terminal/escape/osc.cpp \
+    math/matrices.cpp \
+    math/matricies_tests.cpp \
+    terminal/escape/escape_osc.cpp \
     terminal/escape/terminal_data.cpp \
     terminal/escape/terminal_escape.cpp \
     terminal/terminal.cpp
 
 HEADERS += \
-    ansiescape.h \
     application.h \
     dataitem.h \
     mainwindow.h \
-    terminal.h \
-    terminal/escape/osc.h \
+    math/matrices.h \
+    terminal/escape/escape_osc.h \
     terminal/escape/terminal_data.h \
     terminal/escape/terminal_escape.h \
     terminal/terminal.h
