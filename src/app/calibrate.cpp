@@ -11,6 +11,7 @@ const Eigen::Matrix<double, 6, 6> Calibrate::preInvertedConstraintMatrix
     {0.0, 0.0, 0.0, 0.0, 0.0, -0.25},
 };
 
+/*
 void print_matrix(double *X, int m, int n) {
     int i,j;
     int idx = 0;
@@ -23,37 +24,40 @@ void print_matrix(double *X, int m, int n) {
         printf("\n");
     }
 }
+*/
 
 Calibrate::Calibrate(QObject* parent)
     : QObject{ parent }
 {
-    std::cout << preInvertedConstraintMatrix << "\n";
+    // std::cout << preInvertedConstraintMatrix << "\n";
 
-    AddPoint(1,1,1);
-    AddPoint(2, 2, 2);
-    AddPoint(3, 3, 3);
+
 }
 
-void Calibrate::AddPoint(double x, double y, double z)
+void Calibrate::addPoint(double x, double y, double z)
 {
-    Vector10d item = xyzToVect10d(x, y, z);
-    input.conservativeResize(input.rows(), input.cols()+1);
-    input.col(input.cols()-1) = item;
-    std::cout << input << "\n----------\n";
+    points.push_back({x, y, z});
+    calibrate();
 }
 
-Vector10d Calibrate::xyzToVect10d(double x, double y, double z)
+void Calibrate::reset()
 {
-    Vector10d v;
-    v[0] = x*x;
-    v[1] = y*y;
-    v[2] = z*z;
-    v[3] = 2.0 * y * z;
-    v[4] = 2.0 * x * z;
-    v[5] = 2.0 * x * y;
-    v[6] = 2.0 * x;
-    v[7] = 2.0 * y;
-    v[8] = 2.0 * z;
-    v[9] = 1.0;
-    return v;
+    points.clear();
+}
+
+void Calibrate::calibrate()
+{
+    Eigen::Matrix<double, 10, Eigen::Dynamic> inputMatrix;
+    inputMatrix.resize(Eigen::NoChange, points.size());
+    for (std::size_t i = 0 ; i < points.size() ; ++i)
+    {
+        inputMatrix.col(i) = points[i].toVect();
+    }
+
+    Eigen::Matrix<double, 10, 10> symmetricInputMatrix = inputMatrix.transpose().lazyProduct(inputMatrix);
+
+    // Eigen::Matrix<double, 6, 6> s11;
+
+
+    // TODO: calculate tensors.
 }

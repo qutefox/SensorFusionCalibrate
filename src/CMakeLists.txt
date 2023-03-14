@@ -34,8 +34,11 @@ FetchContent_MakeAvailable(Eigen3)
 
 set(PROJECT_SOURCES
         main.cpp
+        app/calibrate_types.h
         app/calibrate.h
         app/calibrate.cpp
+        app/calibration_point.h
+        app/calibration_point.cpp
         # app/test.cpp
         widget/mainwindow.cpp
         widget/mainwindow.h
