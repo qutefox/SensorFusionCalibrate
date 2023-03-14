@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(matrices LANGUAGES CXX)
+project(SensorFusionCalibrateTests LANGUAGES CXX)
 
 enable_testing()
 
@@ -19,10 +19,22 @@ file(GLOB SOURCES
     ./*.cpp
 )
 
-add_executable(matrices ${SOURCES})
+add_executable(SensorFusionCalibrateTests ${SOURCES})
 
-# add_executable(matrices tst_matrices.cpp)
-add_test(NAME matrices COMMAND matrices)
+# enable FetchContent
+include(FetchContent)
 
-target_link_libraries(matrices PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+# declare Eigen
+FetchContent_Declare(Eigen
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG        3.4.0
+)
+
+# make available
+FetchContent_MakeAvailable(Eigen)
+
+# add_executable(SensorFusionCalibrateTests tst_matrices.cpp)
+add_test(NAME SensorFusionCalibrateTests COMMAND SensorFusionCalibrateTests)
+
+target_link_libraries(SensorFusionCalibrateTests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
 

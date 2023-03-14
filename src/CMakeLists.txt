@@ -12,10 +12,31 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
+# enable FetchContent
+include(FetchContent)
+
+# declare Eigen
+FetchContent_Declare(Eigen3
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG        3.4.0
+)
+
+set(EIGEN_BUILD_DOC OFF)
+# note: To disable eigen tests,
+# you should put this code in a add_subdirectory to avoid to change
+# BUILD_TESTING for your own project too since variables are directory
+# scoped
+set(BUILD_TESTING OFF)
+set(EIGEN_BUILD_PKGCONFIG OFF)
+
+# make available
+FetchContent_MakeAvailable(Eigen3)
+
 set(PROJECT_SOURCES
         main.cpp
-        math/matrices.h
-        math/matrices.cpp
+        app/calibrate.h
+        app/calibrate.cpp
+        # app/test.cpp
         widget/mainwindow.cpp
         widget/mainwindow.h
         widget/mainwindow.ui
@@ -45,6 +66,7 @@ else()
 endif()
 
 target_link_libraries(SensorFusionCalibrate PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(SensorFusionCalibrate PRIVATE Eigen3::Eigen)
 
 set_target_properties(SensorFusionCalibrate PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
