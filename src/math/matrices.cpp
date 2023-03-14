@@ -92,11 +92,11 @@ void Matrix_Transposed_x_the_Matrix(double*C, double *A, int nrows, int ncols)
     }
 }
 
-void CMatrix_x_a_CMatrix_Transposed(double complex *C, double complex *A, int nrows, int ncols, double complex *B, int mrows)
+void CMatrix_x_a_CMatrix_Transposed(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols, std::complex<double> *B, int mrows)
 {
     int i,j,k;
-    double complex *pA;
-    double complex *pB;
+    std::complex<double> *pA;
+    std::complex<double> *pB;
 
     for (i = 0; i < nrows; A += ncols, i++)
     {
@@ -107,13 +107,13 @@ void CMatrix_x_a_CMatrix_Transposed(double complex *C, double complex *A, int nr
     }
 }
 
-void CMatrix_x_Its_Transpose(double complex *C, double complex *A, int nrows, int ncols)
+void CMatrix_x_Its_Transpose(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols)
 {
     int i,j,k;
-    double complex *pAi0 = A;
-    double complex *pAj0;
-    double complex *pCi0 = C;
-    double complex *pCji;
+    std::complex<double> *pAi0 = A;
+    std::complex<double> *pAj0;
+    std::complex<double> *pCi0 = C;
+    std::complex<double> *pCji;
 
     for (i = 0; i < nrows; pCi0 += nrows, pAi0 += ncols, i++)
     {
@@ -131,12 +131,12 @@ void CMatrix_x_Its_Transpose(double complex *C, double complex *A, int nrows, in
     }
 }
 
-void CMatrix_Transposed_x_a_CMatrix(double complex *C, double complex *A, int nrows, int ncols, double complex *B, int mcols)
+void CMatrix_Transposed_x_a_CMatrix(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols, std::complex<double> *B, int mcols)
 {
     int i,j,k;
-    double complex *pA = A;
-    double complex *pB;
-    double complex *p_B;
+    std::complex<double> *pA = A;
+    std::complex<double> *pB;
+    std::complex<double> *p_B;
 
     for (i = 0; i < ncols; A++, i++)
     {
@@ -153,14 +153,14 @@ void CMatrix_Transposed_x_a_CMatrix(double complex *C, double complex *A, int nr
     }
 }
 
-void CMatrix_Transposed_x_the_CMatrix(double complex *C, double complex *A, int nrows, int ncols)
+void CMatrix_Transposed_x_the_CMatrix(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols)
 {
-    double complex *pAki;
-    double complex *pAkj;
-    double complex *pA0i;
-    double complex *pCij;
-    double complex *pCji;
-    double complex *pCii = C;
+    std::complex<double> *pAki;
+    std::complex<double> *pAkj;
+    std::complex<double> *pA0i;
+    std::complex<double> *pCij;
+    std::complex<double> *pCji;
+    std::complex<double> *pCii = C;
     int i,j,k;
 
     for (i = 0; i < ncols; pCii += ncols + 1, i++)
@@ -182,11 +182,11 @@ void CMatrix_Transposed_x_the_CMatrix(double complex *C, double complex *A, int 
     }
 }
 
-void CMatrix_x_a_CMatrix_Daggered(double complex *C, double complex *A, int nrows, int ncols, double complex *B, int mrows)
+void CMatrix_x_a_CMatrix_Daggered(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols, std::complex<double> *B, int mrows)
 {
     int i,j,k;
-    double complex *pA;
-    double complex *pB;
+    std::complex<double> *pA;
+    std::complex<double> *pB;
 
     for (i = 0; i < nrows; A += ncols, i++)
     {
@@ -200,13 +200,13 @@ void CMatrix_x_a_CMatrix_Daggered(double complex *C, double complex *A, int nrow
     }
 }
 
-void CMatrix_x_Its_Dagger(double complex *C, double complex *A, int nrows, int ncols)
+void CMatrix_x_Its_Dagger(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols)
 {
     int i,j,k;
-    double complex *pAi0 = A;
-    double complex *pAj0;
-    double complex *pCi0 = C;
-    double complex *pCji;
+    std::complex<double> *pAi0 = A;
+    std::complex<double> *pAj0;
+    std::complex<double> *pCi0 = C;
+    std::complex<double> *pCji;
 
     for (i = 0; i < nrows; pCi0 += nrows, pAi0 += ncols, i++)
     {
@@ -224,12 +224,12 @@ void CMatrix_x_Its_Dagger(double complex *C, double complex *A, int nrows, int n
     }
 }
 
-void CMatrix_Daggered_x_a_CMatrix(double complex *C, double complex *A, int nrows, int ncols, double complex *B, int mcols)
+void CMatrix_Daggered_x_a_CMatrix(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols, std::complex<double> *B, int mcols)
 {
    int i,j,k;
-   double complex *pA = A;
-   double complex *pB;
-   double complex *p_B;
+   std::complex<double> *pA = A;
+   std::complex<double> *pB;
+   std::complex<double> *p_B;
 
     for (i = 0; i < ncols; A++, i++)
     {
@@ -246,14 +246,14 @@ void CMatrix_Daggered_x_a_CMatrix(double complex *C, double complex *A, int nrow
     }
 }
 
-void CMatrix_Daggered_x_the_CMatrix(double complex *C, double complex *A, int nrows, int ncols)
+void CMatrix_Daggered_x_the_CMatrix(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols)
 {
-    double complex *pAki;
-    double complex *pAkj;
-    double complex *pA0i;
-    double complex *pCij;
-    double complex *pCji;
-    double complex *pCii = C;
+    std::complex<double> *pAki;
+    std::complex<double> *pAkj;
+    std::complex<double> *pA0i;
+    std::complex<double> *pCij;
+    std::complex<double> *pCji;
+    std::complex<double> *pCii = C;
     int i,j,k;
 
     for (i = 0; i < ncols; pCii += ncols + 1, i++)
@@ -275,10 +275,10 @@ void CMatrix_Daggered_x_the_CMatrix(double complex *C, double complex *A, int nr
     }
 }
 
-void CMatrix_Daggered_x_an_RMatrix(double complex *C, double complex *A, int nrows, int ncols, double *B, int mcols)
+void CMatrix_Daggered_x_an_RMatrix(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols, double *B, int mcols)
 {
     int i,j,k;
-    double complex *pA = A;
+    std::complex<double> *pA = A;
     double *pB;
     double *p_B;
 
@@ -297,10 +297,10 @@ void CMatrix_Daggered_x_an_RMatrix(double complex *C, double complex *A, int nro
     }
 }
 
-void CMatrix_Transposed_x_an_RMatrix(double complex *C, double complex *A, int nrows, int ncols, double *B, int mcols)
+void CMatrix_Transposed_x_an_RMatrix(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols, double *B, int mcols)
 {
     int i,j,k;
-    double complex *pA = A;
+    std::complex<double> *pA = A;
     double *pB;
     double *p_B;
 
@@ -319,10 +319,10 @@ void CMatrix_Transposed_x_an_RMatrix(double complex *C, double complex *A, int n
     }
 }
 
-void CMatrix_x_an_RMatrix_Transposed(double complex *C, double complex *A, int nrows, int ncols, double *B, int mrows)
+void CMatrix_x_an_RMatrix_Transposed(std::complex<double> *C, std::complex<double> *A, int nrows, int ncols, double *B, int mrows)
 {
     int i,j,k;
-    double complex *pA;
+    std::complex<double> *pA;
     double *pB;
 
     for (i = 0; i < nrows; A += ncols, i++)
@@ -337,12 +337,12 @@ void CMatrix_x_an_RMatrix_Transposed(double complex *C, double complex *A, int n
     }
 }
 
-void RMatrix_Transposed_x_a_CMatrix(double complex *C, double *A, int nrows, int ncols, double complex *B, int mcols)
+void RMatrix_Transposed_x_a_CMatrix(std::complex<double> *C, double *A, int nrows, int ncols, std::complex<double> *B, int mcols)
 {
     int i,j,k;
     double *pA = A;
-    double complex *pB;
-    double complex *p_B;
+    std::complex<double> *pB;
+    std::complex<double> *p_B;
 
     for (i = 0; i < ncols; A++, i++)
     {
@@ -359,11 +359,11 @@ void RMatrix_Transposed_x_a_CMatrix(double complex *C, double *A, int nrows, int
     }
 }
 
-void RMatrix_x_a_CMatrix_Daggered(double complex *C, double *A, int nrows, int ncols, double complex *B, int mrows)
+void RMatrix_x_a_CMatrix_Daggered(std::complex<double> *C, double *A, int nrows, int ncols, std::complex<double> *B, int mrows)
 {
     int i,j,k;
     double *pA;
-    double complex *pB;
+    std::complex<double> *pB;
 
     for (i = 0; i < nrows; A += ncols, i++)
     {
@@ -377,11 +377,11 @@ void RMatrix_x_a_CMatrix_Daggered(double complex *C, double *A, int nrows, int n
     }
 }
 
-void RMatrix_x_a_CMatrix_Transposed(double complex *C, double *A, int nrows, int ncols, double complex *B, int mrows)
+void RMatrix_x_a_CMatrix_Transposed(std::complex<double> *C, double *A, int nrows, int ncols, std::complex<double> *B, int mrows)
 {
     int i,j,k;
     double *pA;
-    double complex *pB;
+    std::complex<double> *pB;
 
     for (i = 0; i < nrows; A += ncols, i++)
     {
