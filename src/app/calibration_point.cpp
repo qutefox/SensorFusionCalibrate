@@ -28,6 +28,21 @@ Vector10d CalibrationPoint::toVect() const
     return v;
 }
 
+const double& CalibrationPoint::getX() const
+{
+    return x;
+}
+
+const double& CalibrationPoint::getY() const
+{
+    return y;
+}
+
+const double& CalibrationPoint::getZ() const
+{
+    return z;
+}
+
 std::ostream& operator<<(std::ostream& os, const CalibrationPoint& cp)
 {
     os << "x: " << cp.x << ", y: " << cp.y << ", z: " << cp.z;

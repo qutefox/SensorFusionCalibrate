@@ -9,6 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj") # required for Eigen::EigenSolver
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
@@ -40,6 +42,16 @@ set(PROJECT_SOURCES
         app/calibration_point.h
         app/calibration_point.cpp
         # app/test.cpp
+        math/matrices.h
+        math/matrices.cpp
+        math/data_movement.h
+        math/data_movement.cpp
+        math/upper_triangular.h
+        math/lower_triangular.h
+        math/choleski.h
+        math/multiply_matrices.h
+        math/hessenberg_elementary.h
+        math/qr_hessenberg_matrix.h
         widget/mainwindow.cpp
         widget/mainwindow.h
         widget/mainwindow.ui

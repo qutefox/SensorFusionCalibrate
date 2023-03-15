@@ -16,6 +16,7 @@ public slots:
     void addPoint(double x, double y, double z);
     void reset();
     void calibrate();
+    void test();
 
 private:
     static const Eigen::Matrix<double, 6, 6> preInvertedConstraintMatrix;
