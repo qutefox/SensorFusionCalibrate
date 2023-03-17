@@ -14,39 +14,61 @@ Calibrate::Calibrate(QObject* parent)
     : QObject{ parent }
 {
 
-    addPoint(1, 1, 1);
-    addPoint(2, 2, 2);
-    addPoint(3, 3, 3);
-    addPoint(1, 2, 3);
-    addPoint(3, 2, 1);
-    addPoint(6, 7, 8);
-    addPoint(4, 5, 6);
-    addPoint(1, 1, 1);
-    addPoint(1, 2, 4);
-    addPoint(1, 3, 8);
-    addPoint(4, 5, 4);
-    calibrate();
+}
+
+void Calibrate::addPoint(const Point& point)
+{
+    m_inputLock.lockForWrite();
+    m_points.insert(point);
+    m_inputLock.unlock();
 }
 
 void Calibrate::addPoint(double x, double y, double z)
 {
-    points.push_back({x, y, z});
-    // calibrate(); // TODO: guard 'points' vector change during calibration.
+    m_inputLock.lockForWrite();
+    m_points.insert({x, y, z});
+    m_inputLock.unlock();
 }
 
 void Calibrate::reset()
 {
-    points.clear();
+    m_inputLock.lockForWrite();
+    m_points.clear();
+    m_inputLock.unlock();
+}
+
+Vector3d Calibrate::getBias()
+{
+    Vector3d bias;
+    m_outputLock.lockForRead();
+    bias = m_bias;
+    m_outputLock.unlock();
+    return bias;
+}
+
+Matrix3x3d Calibrate::getTensor()
+{
+    Matrix3x3d tensor;
+    m_outputLock.lockForRead();
+    tensor = m_tensor;
+    m_outputLock.unlock();
+    return tensor;
 }
 
 void Calibrate::calibrate()
 {
     Eigen::Matrix<double, 10, Eigen::Dynamic> inputMatrix;
-    inputMatrix.resize(Eigen::NoChange, points.size());
-    for (std::size_t i = 0 ; i < points.size() ; ++i)
+
+    m_inputLock.lockForRead();
+
+    inputMatrix.resize(Eigen::NoChange, m_points.size());
+    std::size_t i = 0;
+    for (const Point& p : m_points)
     {
-        inputMatrix.col(i) = points[i].toVect();
+        inputMatrix.col(i++) = p.toVect();
     }
+
+    m_inputLock.unlock();
 
     Matrix10x10d symmetricInputMatrix = inputMatrix * inputMatrix.transpose();
     Matrix6x6d symmetric11   = symmetricInputMatrix.block(0, 0, 6, 6);
@@ -70,13 +92,15 @@ void Calibrate::calibrate()
     Vector3d u {v[6], v[7], v[8]};
     Matrix3x3d q1 = q.llt().solve(Matrix3x3d::Identity());
 
-    bias = q1 * u;
-    bias *= -1;
+    m_outputLock.lockForWrite();
+
+    m_bias = q1 * u;
+    m_bias *= -1;
     // b[0] -> x-axis combined bias
     // b[1] -> y-axis combined bias
     // b[2] -> z-axis combined bias
-    Vector3d qb = q * bias;
-    Vector1d btqb = bias.transpose() * qb;
+    Vector3d qb = q * m_bias;
+    Vector1d btqb = m_bias.transpose() * qb;
     double hmb = std::sqrt(btqb(0,0)-v[9]);
 
     Eigen::EigenSolver<Matrix3x3d> eigenSolver2(q, true);
@@ -90,5 +114,7 @@ void Calibrate::calibrate()
     Matrix3x3d vdz = eigenSolver2.eigenvectors().real() * dz;
     Matrix3x3d sq = vdz * eigenSolver2.eigenvectors().real().transpose();
     double hm = 0.569; // TODO: config?!
-    tensor = sq * hm / hmb;
+    m_tensor = sq * hm / hmb;
+
+    m_outputLock.unlock();
 }

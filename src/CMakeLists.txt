@@ -9,10 +9,10 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj") # required for Eigen::EigenSolver
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wa,-mbig-obj") # required for Eigen::EigenSolver
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets SerialPort)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets SerialPort)
 
 # enable FetchContent
 include(FetchContent)
@@ -36,11 +36,24 @@ FetchContent_MakeAvailable(Eigen3)
 
 set(PROJECT_SOURCES
         main.cpp
-        app/calibrate_types.h
+
+        data/data_types.h
+        data/point.h
+        data/point.cpp
+
+        datasource/idatasource.h
+        datasource/csv_file.h
+        datasource/csv_file.cpp
+        datasource/serial_port.h
+        datasource/serial_port.cpp
+
+        app/application.h
+        app/application.cpp
+        app/settings.h
+        app/settings.cpp
         app/calibrate.h
         app/calibrate.cpp
-        app/calibration_point.h
-        app/calibration_point.cpp
+
         widget/mainwindow.cpp
         widget/mainwindow.h
         widget/mainwindow.ui
@@ -70,6 +83,7 @@ else()
 endif()
 
 target_link_libraries(SensorFusionCalibrate PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(SensorFusionCalibrate PRIVATE Qt${QT_VERSION_MAJOR}::SerialPort)
 target_link_libraries(SensorFusionCalibrate PRIVATE Eigen3::Eigen)
 
 set_target_properties(SensorFusionCalibrate PROPERTIES

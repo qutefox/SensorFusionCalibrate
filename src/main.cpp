@@ -1,16 +1,7 @@
-#include "widget/mainwindow.h"
-
-#include "app/calibrate.h"
-
-#include <QApplication>
+#include "app/application.h"
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-
-    Calibrate c;
-
-    MainWindow w;
-    w.show();
+    Application a(argc, argv);
     return a.exec();
 }
