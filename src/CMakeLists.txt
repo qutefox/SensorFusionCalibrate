@@ -41,17 +41,6 @@ set(PROJECT_SOURCES
         app/calibrate.cpp
         app/calibration_point.h
         app/calibration_point.cpp
-        # app/test.cpp
-        math/matrices.h
-        math/matrices.cpp
-        math/data_movement.h
-        math/data_movement.cpp
-        math/upper_triangular.h
-        math/lower_triangular.h
-        math/choleski.h
-        math/multiply_matrices.h
-        math/hessenberg_elementary.h
-        math/qr_hessenberg_matrix.h
         widget/mainwindow.cpp
         widget/mainwindow.h
         widget/mainwindow.ui

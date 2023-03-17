@@ -16,9 +16,11 @@ public slots:
     void addPoint(double x, double y, double z);
     void reset();
     void calibrate();
-    void test();
 
 private:
-    static const Eigen::Matrix<double, 6, 6> preInvertedConstraintMatrix;
+    static const Matrix6x6d preInvertedConstraintMatrix;
     QList<CalibrationPoint> points;
+    Vector3d bias;
+    Matrix3x3d tensor;
+
 };
