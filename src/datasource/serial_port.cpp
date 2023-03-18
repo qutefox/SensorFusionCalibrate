@@ -15,7 +15,7 @@ std::set<Point>&& SerialPortDataSource::getNextPoints()
     return std::move(m_points);
 }
 
-long long SerialPortDataSource::totalNumberOfPoints()
+bool SerialPortDataSource::applyConfig(const QMap<QString, QVariant>& config)
 {
-    return -1; // It's a stream. We can't know.
+    return false;
 }

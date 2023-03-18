@@ -18,41 +18,54 @@ Calibrate::Calibrate(QObject* parent)
 
 void Calibrate::addPoint(const Point& point)
 {
+    bool changed = false;
     m_inputLock.lockForWrite();
-    m_points.insert(point);
+    changed = m_points.insert(point).second;
     m_inputLock.unlock();
+    if (changed) calibrate();
 }
 
 void Calibrate::addPoint(double x, double y, double z)
 {
+    bool changed = false;
     m_inputLock.lockForWrite();
-    m_points.insert({x, y, z});
+    changed = m_points.insert({x, y, z}).second;
     m_inputLock.unlock();
+    if (changed) calibrate();
+}
+
+void Calibrate::addPoints(const std::set<Point>& points)
+{
+    if (points.empty()) return;
+    bool changed = false;
+    m_inputLock.lockForWrite();
+    std::size_t beforeSize = m_points.size();
+    m_points.insert(points.begin(), points.end());
+    std::size_t afterSize = m_points.size();
+    if (afterSize > beforeSize) changed = true;
+    m_inputLock.unlock();
+    if (changed) calibrate();
 }
 
 void Calibrate::reset()
 {
     m_inputLock.lockForWrite();
+    m_outputLock.lockForWrite();
+
     m_points.clear();
+    m_result.reset();
+
     m_inputLock.unlock();
+    m_outputLock.unlock();
 }
 
-Vector3d Calibrate::getBias()
+CalibrationResult Calibrate::getResult()
 {
-    Vector3d bias;
+    CalibrationResult result;
     m_outputLock.lockForRead();
-    bias = m_bias;
+    result = m_result;
     m_outputLock.unlock();
-    return bias;
-}
-
-Matrix3x3d Calibrate::getTensor()
-{
-    Matrix3x3d tensor;
-    m_outputLock.lockForRead();
-    tensor = m_tensor;
-    m_outputLock.unlock();
-    return tensor;
+    return result;
 }
 
 void Calibrate::calibrate()
@@ -94,13 +107,13 @@ void Calibrate::calibrate()
 
     m_outputLock.lockForWrite();
 
-    m_bias = q1 * u;
-    m_bias *= -1;
+    m_result.biasVector = q1 * u;
+    m_result.biasVector *= -1;
     // b[0] -> x-axis combined bias
     // b[1] -> y-axis combined bias
     // b[2] -> z-axis combined bias
-    Vector3d qb = q * m_bias;
-    Vector1d btqb = m_bias.transpose() * qb;
+    Vector3d qb = q * m_result.biasVector;
+    Vector1d btqb = m_result.biasVector.transpose() * qb;
     double hmb = std::sqrt(btqb(0,0)-v[9]);
 
     Eigen::EigenSolver<Matrix3x3d> eigenSolver2(q, true);
@@ -114,7 +127,11 @@ void Calibrate::calibrate()
     Matrix3x3d vdz = eigenSolver2.eigenvectors().real() * dz;
     Matrix3x3d sq = vdz * eigenSolver2.eigenvectors().real().transpose();
     double hm = 0.569; // TODO: config?!
-    m_tensor = sq * hm / hmb;
+    m_result.transformationMatrix = sq * hm / hmb;
 
+    m_outputLock.unlock();
+
+    m_outputLock.lockForRead();
+    emit resultReady(m_result);
     m_outputLock.unlock();
 }

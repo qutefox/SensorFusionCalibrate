@@ -40,6 +40,8 @@ set(PROJECT_SOURCES
         data/data_types.h
         data/point.h
         data/point.cpp
+        data/calibration_result.h
+        data/calibration_result.cpp
 
         datasource/idatasource.h
         datasource/csv_file.h
@@ -54,6 +56,8 @@ set(PROJECT_SOURCES
         app/calibrate.h
         app/calibrate.cpp
 
+        widget/calibration_result_widget.h
+        widget/calibration_result_widget.cpp
         widget/mainwindow.cpp
         widget/mainwindow.h
         widget/mainwindow.ui

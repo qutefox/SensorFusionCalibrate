@@ -6,40 +6,51 @@
 
 CSVFileDataSource::CSVFileDataSource(const QString& filePath)
 {
-    m_csvFile.open(filePath.toStdString());
-    if (!m_csvFile.is_open())
-    {
-        std::ostringstream oss;
-        oss << "Could not open file: '" << filePath.toStdString() << "'.";
-        throw std::ios_base::failure(oss.str());
-    }
-
-    std::string line;
-    while (std::getline(m_csvFile, line))
-    {
-        ++m_totalNumberOfPoints;
-    }
-
-    m_csvFile.clear();
-    m_csvFile.seekg(0);
+    openFile(filePath);
 }
 
 CSVFileDataSource::~CSVFileDataSource()
 {
-    m_csvFile.close();
+    if (m_csvFile) m_csvFile->close();
+    m_csvFile.reset();
 }
 
-bool CSVFileDataSource::shouldReadMore(long long maxNumberOfPoints)
+void CSVFileDataSource::openFile(const QString& filePath)
 {
-    if (m_csvFile.eof()) return false;
-    if (maxNumberOfPoints <= 0 || m_points.size() < maxNumberOfPoints) return true;
-    return false;
-}
+    if (m_csvFile) m_csvFile->close();
+    m_csvFile.reset();
 
-void CSVFileDataSource::fillBuffer(long long maxNumberOfPoints)
-{
+    if (filePath.isEmpty()) return;
+
+    // Set exceptions to be thrown on failure
+    m_csvFile->exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    m_csvFile->open(filePath.toStdString(), std::ifstream::in);
+
+    /*
+    std::size_t lineCount = 0;
     std::string line;
-    while(shouldReadMore(maxNumberOfPoints) && getline(m_csvFile, line))
+    while (std::getline(*m_csvFile, line))
+    {
+        ++lineCount;
+    }
+
+    m_csvFile->clear();
+    m_csvFile->seekg(0);
+
+    Since we use and std::set we don't need to pre-allocate the memory.
+
+    If we had used an std::vector as container we would have wanted to do:
+    std::vector<Point> p; p.reserve(lineCounts);
+    to gain a little performance boost.
+    */
+}
+
+void CSVFileDataSource::fillBuffer()
+{
+    if (!m_csvFile) return;
+
+    std::string line;
+    while(getline(*m_csvFile, line))
     {
         if (line.empty()) continue;
         std::istringstream iss(line);
@@ -54,13 +65,21 @@ void CSVFileDataSource::fillBuffer(long long maxNumberOfPoints)
     }
 }
 
-std::set<Point>&& CSVFileDataSource::getNextPoints(long long maxNumberOfPoints)
+std::set<Point>&& CSVFileDataSource::getNextPoints()
 {
-    fillBuffer(maxNumberOfPoints);
+    fillBuffer();
     return std::move(m_points);
 }
 
-long long CSVFileDataSource::totalNumberOfPoints()
+bool CSVFileDataSource::applyConfig(const QMap<QString, QVariant>& config)
 {
-    return m_totalNumberOfPoints;
+    QVariant fileNameVariant = config.value("fileName", QVariant(""));
+    QString fileName = fileNameVariant.toString();
+    if (!fileName.isEmpty())
+    {
+        openFile(fileName);
+        return true;
+    }
+
+    return false;
 }

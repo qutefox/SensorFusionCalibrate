@@ -8,6 +8,7 @@
 
 #include "../data/data_types.h"
 #include "../data/point.h"
+#include "../data/calibration_result.h"
 
 class Calibrate : public QObject
 {
@@ -19,18 +20,20 @@ public:
 public slots:
     void addPoint(const Point& point);
     void addPoint(double x, double y, double z);
+    void addPoints(const std::set<Point>& points);
     void reset();
     void calibrate();
 
-    Vector3d getBias();
-    Matrix3x3d getTensor();
+    CalibrationResult getResult();
+
+signals:
+    void resultReady(CalibrationResult result);
 
 private:
     static const Matrix6x6d preInvertedConstraintMatrix;
     std::set<Point> m_points;
     QReadWriteLock m_inputLock;
     QReadWriteLock m_outputLock;
-    Vector3d m_bias;
-    Matrix3x3d m_tensor;
+    CalibrationResult m_result;
 
 };

@@ -13,8 +13,9 @@ public:
     SerialPortDataSource();
     virtual ~SerialPortDataSource();
 
-    std::set<Point>&& getNextPoints(long long maxNumberOfPoints = -1) override;
-    long long totalNumberOfPoints() override;
+    std::set<Point>&& getNextPoints() override;
+    bool applyConfig(const QMap<QString, QVariant>& config) override;
+    bool isStream() const override { return true; }
 
 private:
     QSerialPort m_serial;
