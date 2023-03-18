@@ -1,5 +1,6 @@
 #include "serial_port.h"
 
+/*
 SerialPortDataSource::SerialPortDataSource()
 {
 
@@ -15,7 +16,8 @@ std::set<Point>&& SerialPortDataSource::getNextPoints()
     return std::move(m_points);
 }
 
-bool SerialPortDataSource::applyConfig(const QMap<QString, QVariant>& config)
+QWidget* SerialPortDataSource::getConfigWidgetToShow()
 {
-    return false;
+    return nullptr;
 }
+*/

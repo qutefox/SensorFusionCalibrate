@@ -6,6 +6,7 @@
 
 #include "idatasource.h"
 
+/*
 class SerialPortDataSource : IDataSource
 {
 
@@ -14,10 +15,10 @@ public:
     virtual ~SerialPortDataSource();
 
     std::set<Point>&& getNextPoints() override;
-    bool applyConfig(const QMap<QString, QVariant>& config) override;
     bool isStream() const override { return true; }
 
 private:
     QSerialPort m_serial;
     std::set<Point> m_points;
 };
+*/

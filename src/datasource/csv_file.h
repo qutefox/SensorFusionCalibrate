@@ -5,25 +5,40 @@
 #include <fstream>
 
 #include <QString>
+#include <QFile>
+#include <QWidget>
+#include <QLineEdit>
+#include <QToolButton>
+#include <QRegularExpression>
 
 #include "idatasource.h"
 
-class CSVFileDataSource : IDataSource
+class CSVFileDataSource : public IDataSource
 {
+    Q_OBJECT
 
 public:
-    CSVFileDataSource(const QString& filePath = "");
+    CSVFileDataSource(QWidget* parent = nullptr);
     virtual ~CSVFileDataSource();
 
-    std::set<Point>&& getNextPoints() override;
-    bool applyConfig(const QMap<QString, QVariant>& config) override;
+    static QString getName() { return "CSV File"; }
+    bool getNextPoints(QSet<Point>& dev0, QSet<Point>& dev1, QSet<Point>& dev2) override;
     bool isStream() const override { return false; }
 
-private:
-    QString m_filePath;
-    std::unique_ptr<std::ifstream> m_csvFile;
-    std::set<Point> m_points;
+private slots:
+    void openFileDialog();
+    void isFilePathValid(QString filePath);
+    void processFile();
 
-    void fillBuffer();
-    void openFile(const QString& filePath);
+private:
+    QLineEdit* m_lineEdit;
+    QToolButton* m_toolButtonChoose;
+    QToolButton* m_toolButtonProcess;
+    QFile m_csvFile;
+    std::set<Point> m_points;
+    static const QRegularExpression numRegex;
+
+    void processStarted();
+    void processFailed();
+    void processDone();
 };

@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/open-file-black.png</file>
+        <file>images/open-file-white.png</file>
+        <file>images/process-black.png</file>
+        <file>images/process-white.png</file>
+        <file>images/cancel-white.png</file>
+        <file>images/cancel-black.png</file>
+        <file>images/cancel-darkred.png</file>
+        <file>images/fail-black.png</file>
+        <file>images/fail-darkred.png</file>
+        <file>images/fail-white.png</file>
+    </qresource>
+</RCC>
