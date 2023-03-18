@@ -131,24 +131,20 @@ void CSVFileDataSource::processFailed()
     m_toolButtonProcess->setEnabled(false);
     m_lineEdit->setEnabled(true);
     m_toolButtonChoose->setEnabled(true);
-    emit failedToOpen(m_csvFile.errorString());
+    emit failed(m_csvFile.errorString());
 }
 
-bool CSVFileDataSource::getNextPoints(QSet<Point>& dev0, QSet<Point>& dev1, QSet<Point>& dev2)
+bool CSVFileDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints)
 {
-    dev0.clear();
-    dev1.clear();
-    dev2.clear();
-
     if (!m_csvFile.isOpen()) return false;
 
     QString line, doubleStr;
     QStringList row;
     QList<double> doubles;
     QRegularExpressionMatch match;
-    bool doubleConvertedOk;
+    bool doubleConvertedOk, hasMoreDeviceData;
     double doubleNum;
-    Point point;
+    int deviceIndex, nextGroupIndex;
     QTextStream in(&m_csvFile);
     while (!in.atEnd())
     {
@@ -161,16 +157,34 @@ bool CSVFileDataSource::getNextPoints(QSet<Point>& dev0, QSet<Point>& dev1, QSet
             if (match.hasMatch())
             {
                 doubleStr.clear();
-                if (match.capturedLength()>=1) doubleStr += match.captured(0);
+                if (match.capturedLength()>=1) doubleStr += match.captured(0); // sign (+ or -)
                 if (match.capturedLength()>=2) doubleStr += match.captured(1);
                 if (match.capturedLength()>=3) doubleStr += match.captured(2);
                 doubleNum = doubleStr.toDouble(&doubleConvertedOk);
                 if (doubleConvertedOk) doubles.push_back(doubleNum);
             }
         }
-        if (doubles.size() >= 3) dev0.insert(Point(doubles[0], doubles[1], doubles[2]));
-        if (doubles.size() >= 6) dev1.insert(Point(doubles[3], doubles[4], doubles[5]));
-        if (doubles.size() >= 9) dev1.insert(Point(doubles[6], doubles[7], doubles[8]));
+
+        deviceIndex = 0;
+        nextGroupIndex = 3 + (deviceIndex*3);
+        hasMoreDeviceData = doubles.size() >= nextGroupIndex;
+
+        while (hasMoreDeviceData)
+        {
+            while((deviceIndex+1) > devicePoints.size())
+            {
+                // Need to add more point set instance.
+                devicePoints.push_back(std::set<Point>());
+            }
+
+            int currIndex = (deviceIndex*3);
+            Point point(doubles[currIndex], doubles[currIndex+1], doubles[currIndex+2]);
+            devicePoints[deviceIndex].insert(point);
+            ++deviceIndex;
+
+            nextGroupIndex = 3 + (deviceIndex*3);
+            hasMoreDeviceData = doubles.size() >= nextGroupIndex;
+        }
     }
 
     processDone();

@@ -1,10 +1,11 @@
 #pragma once
 
-#include <set>
-
 #include <QObject>
+#include <QSet>
 #include <QReadWriteLock>
 #include <Eigen/Dense>
+
+#include <set>
 
 #include "../data/data_types.h"
 #include "../data/point.h"

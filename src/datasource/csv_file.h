@@ -22,7 +22,7 @@ public:
     virtual ~CSVFileDataSource();
 
     static QString getName() { return "CSV File"; }
-    bool getNextPoints(QSet<Point>& dev0, QSet<Point>& dev1, QSet<Point>& dev2) override;
+    bool getNextPoints(std::vector<std::set<Point>>& points) override;
     bool isStream() const override { return false; }
 
 private slots:

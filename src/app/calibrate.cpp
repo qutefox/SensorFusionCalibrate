@@ -1,5 +1,7 @@
 #include "calibrate.h"
 
+#include <iostream>
+
 const Eigen::Matrix<double, 6, 6> Calibrate::preInvertedConstraintMatrix
 {
     {0.0, 0.5, 0.5, 0.0, 0.0, 0.0},
@@ -78,6 +80,7 @@ void Calibrate::calibrate()
     std::size_t i = 0;
     for (const Point& p : m_points)
     {
+        std::cout << p << std::endl << std::flush;
         inputMatrix.col(i++) = p.toVect();
     }
 

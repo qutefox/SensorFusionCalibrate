@@ -1,8 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <QApplication>
+#include <QTimer>
 
 #include "calibrate.h"
 #include "settings.h"
@@ -20,9 +22,18 @@ public:
 
 private:
     MainWindow* m_mainWindow = nullptr;
-    IDataSource* m_dataSource = nullptr;
-
+    QTimer* m_timer = nullptr;
+    std::unique_ptr<IDataSource> m_dataSource;
     Settings m_settings;
-    Calibrate m_calibrate;
+
+    std::vector<std::unique_ptr<Calibrate>> m_calibrators;
+
+private slots:
+    void dataSourceChanged(QString dataSourceName);
+    void dataSourceOpened();
+    void dataSourceClosed();
+    void dataSourceFailed(QString errorMessage);
+    void dataSourceReadNewPoints(unsigned long count);
+    void update();
 
 };
