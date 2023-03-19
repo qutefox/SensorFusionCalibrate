@@ -10,5 +10,7 @@
         <file>images/fail-black.png</file>
         <file>images/fail-darkred.png</file>
         <file>images/fail-white.png</file>
+        <file>images/config-black.png</file>
+        <file>images/config-white.png</file>
     </qresource>
 </RCC>

@@ -3,7 +3,7 @@
 #include "application.h"
 #include "../widget/ui_mainwindow.h"
 #include "../datasource/csv_file.h"
-// #include "../datasource/serial_port.h"
+#include "../datasource/serial_port.h"
 
 Application::Application(int argc, char *argv[])
     : QApplication{ argc, argv }
@@ -12,7 +12,10 @@ Application::Application(int argc, char *argv[])
 {
 
     m_mainWindow->ui()->dataSourceComboBox->addItems(
-        {CSVFileDataSource::getName()}
+        {
+            CSVFileDataSource::getName(),
+            SerialPortDataSource::getName()
+        }
     );
 
     connect(
@@ -49,7 +52,8 @@ void Application::cleanup()
 
 void Application::dataSourceChanged(QString dataSourceName)
 {
-    QHBoxLayout* dataSourceLayout = qobject_cast<QHBoxLayout*>(m_mainWindow->ui()->dataSourceFrame->layout());
+    QWidget* dataSourceWidget = m_mainWindow->ui()->dataSourceFrame;
+    QHBoxLayout* dataSourceLayout = qobject_cast<QHBoxLayout*>(dataSourceWidget->layout());
 
     if (m_dataSource)
     {
@@ -57,9 +61,14 @@ void Application::dataSourceChanged(QString dataSourceName)
     }
 
     m_dataSource.reset();
+
     if (dataSourceName == CSVFileDataSource::getName())
     {
-        m_dataSource = std::make_unique<CSVFileDataSource>();
+        m_dataSource = std::make_unique<CSVFileDataSource>(dataSourceWidget);
+    }
+    else if (dataSourceName == SerialPortDataSource::getName())
+    {
+        m_dataSource = std::make_unique<SerialPortDataSource>(dataSourceWidget);
     }
 
     if (m_dataSource)

@@ -38,5 +38,4 @@ private slots:
     void dataSourceFailed(QString errorMessage);
     void dataSourceReadNewPoints(unsigned long count);
     void update();
-
 };

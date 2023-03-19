@@ -14,7 +14,7 @@ class IDataSource : public QWidget
 public:
     IDataSource(QWidget* parent = nullptr) : QWidget(parent) {};
     virtual ~IDataSource() {}
-    virtual bool getNextPoints(std::vector<std::set<Point>>& points) = 0;
+    virtual bool getNextPoints(std::vector<std::set<Point>>& devicePoints) = 0;
     virtual bool isStream() const = 0;
 
 

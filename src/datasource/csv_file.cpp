@@ -12,12 +12,6 @@ const QRegularExpression CSVFileDataSource::numRegex = QRegularExpression(R"((.*
 CSVFileDataSource::CSVFileDataSource(QWidget* parent)
     : IDataSource{ parent }
 {
-    m_toolButtonProcess =  new QToolButton();
-    m_toolButtonProcess->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_toolButtonProcess->setIcon(QIcon(":/images/process-black.png"));
-    m_toolButtonProcess->setText("Process");
-    m_toolButtonProcess->setEnabled(false);
-
     m_lineEdit = new QLineEdit();
 
     m_toolButtonChoose = new QToolButton();
@@ -25,11 +19,19 @@ CSVFileDataSource::CSVFileDataSource(QWidget* parent)
     m_toolButtonChoose->setIcon(QIcon(":/images/open-file-black.png"));
     m_toolButtonChoose->setText("Choose file");
 
+    m_toolButtonProcess =  new QToolButton();
+    m_toolButtonProcess->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_toolButtonProcess->setIcon(QIcon(":/images/process-black.png"));
+    m_toolButtonProcess->setStyleSheet("QToolButton{color:black;}");
+    m_toolButtonProcess->setText("Process");
+    m_toolButtonProcess->setEnabled(false);
+
     QHBoxLayout* layout = new QHBoxLayout(this);
-    layout->addWidget(m_toolButtonProcess);
     layout->addWidget(new QLabel("File path: "));
     layout->addWidget(m_lineEdit);
     layout->addWidget(m_toolButtonChoose);
+    layout->addWidget(m_toolButtonProcess);
+    // layout->addItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
     connect(
         m_toolButtonChoose, SIGNAL(released()),
@@ -77,12 +79,14 @@ void CSVFileDataSource::isFilePathValid(QString filePath)
     {
         m_toolButtonProcess->setIcon(QIcon(":/images/process-black.png"));
         m_toolButtonProcess->setText("Process");
+        m_toolButtonProcess->setStyleSheet("QToolButton{color:green;}");
         m_toolButtonProcess->setEnabled(true);
     }
     else
     {
         m_toolButtonProcess->setIcon(QIcon(":/images/fail-darkred.png"));
         m_toolButtonProcess->setText("Invalid file");
+        m_toolButtonProcess->setStyleSheet("QToolButton{color:red;}");
         m_toolButtonProcess->setEnabled(false);
     }
 }
@@ -108,6 +112,7 @@ void CSVFileDataSource::processFile()
 void CSVFileDataSource::processStarted()
 {
     m_toolButtonProcess->setIcon(QIcon(":/images/cancel-darkred.png"));
+    m_toolButtonProcess->setStyleSheet("QToolButton{color:orange;}");
     m_toolButtonProcess->setText("Cancel");
     m_lineEdit->setEnabled(false);
     m_toolButtonChoose->setEnabled(false);
@@ -118,6 +123,7 @@ void CSVFileDataSource::processDone()
 {
     m_csvFile.close();
     m_toolButtonProcess->setIcon(QIcon(":/images/process-black.png"));
+    m_toolButtonProcess->setStyleSheet("QToolButton{color:black;}");
     m_toolButtonProcess->setText("Process");
     m_lineEdit->setEnabled(true);
     m_toolButtonChoose->setEnabled(true);
@@ -127,6 +133,7 @@ void CSVFileDataSource::processDone()
 void CSVFileDataSource::processFailed()
 {
     m_toolButtonProcess->setIcon(QIcon(":/images/fail-darkred.png"));
+    m_toolButtonProcess->setStyleSheet("QToolButton{color:red;}");
     m_toolButtonProcess->setText("Failed");
     m_toolButtonProcess->setEnabled(false);
     m_lineEdit->setEnabled(true);
@@ -136,6 +143,8 @@ void CSVFileDataSource::processFailed()
 
 bool CSVFileDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints)
 {
+    devicePoints.clear();
+
     if (!m_csvFile.isOpen()) return false;
 
     QString line, doubleStr;
