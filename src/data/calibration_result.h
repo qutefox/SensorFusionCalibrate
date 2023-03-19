@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #include "data_types.h"
 
 class CalibrationResult
@@ -11,4 +13,8 @@ public:
     CalibrationResult();
 
     void reset();
+
+    friend std::ostream& operator<<(std::ostream& os, const CalibrationResult& cr);
 };
+
+std::ostream& operator<<(std::ostream& os, const CalibrationResult& cr);

@@ -56,8 +56,6 @@ set(PROJECT_SOURCES
         app/calibrate.h
         app/calibrate.cpp
 
-        widget/calibration_result_widget.h
-        widget/calibration_result_widget.cpp
         widget/mainwindow.cpp
         widget/mainwindow.h
         widget/mainwindow.ui

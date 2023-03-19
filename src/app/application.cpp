@@ -103,7 +103,12 @@ void Application::update()
     {
         // Need to add more calibrator instance.
 
-        m_calibrators.push_back(std::make_unique<Calibrate>());
+        QWidget* tabWidget = m_mainWindow->ui()->tabWidget->widget(0);
+        QVBoxLayout* tabLayout = qobject_cast<QVBoxLayout*>(tabWidget->layout());
+
+        m_calibrators.push_back(std::make_unique<Calibrate>(m_calibrators.size()+1, tabWidget));
+        QWidget* calibratorWidget = m_calibrators.back().get();
+        tabLayout->addWidget(calibratorWidget);
     }
 
     for (std::size_t i = 0 ; i < deviceCount ; ++i)

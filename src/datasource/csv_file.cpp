@@ -7,7 +7,7 @@
 #include <QFileInfo>
 #include <QTextStream>
 
-const QRegularExpression CSVFileDataSource::numRegex = QRegularExpression(R"(.*?(-?)([\d]+)(\.[\d]+)?.*)");
+const QRegularExpression CSVFileDataSource::numRegex = QRegularExpression(R"((.*?((-?)([\d]+)(\.[\d]+)?)))");
 
 CSVFileDataSource::CSVFileDataSource(QWidget* parent)
     : IDataSource{ parent }
@@ -139,52 +139,53 @@ bool CSVFileDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints
     if (!m_csvFile.isOpen()) return false;
 
     QString line, doubleStr;
-    QStringList row;
+    qsizetype matchOffset = 0;
     QList<double> doubles;
     QRegularExpressionMatch match;
     bool doubleConvertedOk, hasMoreDeviceData;
     double doubleNum;
-    int deviceIndex, nextGroupIndex;
     QTextStream in(&m_csvFile);
     while (!in.atEnd())
     {
         line = in.readLine();
         if (line.isEmpty() && !m_csvFile.isOpen()) break;
-        row = line.split(',');
-        for (const QString& item : row)
+
+        matchOffset = 0;
+        match = CSVFileDataSource::numRegex.match(line, matchOffset);
+        while (match.hasMatch())
         {
-            match = CSVFileDataSource::numRegex.match(item);
-            if (match.hasMatch())
+            doubleStr.clear();
+            matchOffset += match.captured(0).size(); // Total length of the current match (including non-number characters in front).
+            if (match.capturedLength() >= 2)
             {
-                doubleStr.clear();
-                if (match.capturedLength()>=1) doubleStr += match.captured(0); // sign (+ or -)
-                if (match.capturedLength()>=2) doubleStr += match.captured(1);
-                if (match.capturedLength()>=3) doubleStr += match.captured(2);
+                doubleStr = match.captured(1); // The number (soon to be double) of the current match.
                 doubleNum = doubleStr.toDouble(&doubleConvertedOk);
-                if (doubleConvertedOk) doubles.push_back(doubleNum);
+                if (doubleConvertedOk)
+                {
+                    doubles.push_back(doubleNum);
+                }
             }
+            match = CSVFileDataSource::numRegex.match(line, matchOffset);
         }
 
-        deviceIndex = 0;
-        nextGroupIndex = 3 + (deviceIndex*3);
-        hasMoreDeviceData = doubles.size() >= nextGroupIndex;
+        doubleStr.clear(); // Cleanup some work memory.
 
-        while (hasMoreDeviceData)
+        std::size_t deviceCount = doubles.size() / 3;
+        while(deviceCount > devicePoints.size())
         {
-            while((deviceIndex+1) > devicePoints.size())
-            {
-                // Need to add more point set instance.
-                devicePoints.push_back(std::set<Point>());
-            }
-
-            int currIndex = (deviceIndex*3);
-            Point point(doubles[currIndex], doubles[currIndex+1], doubles[currIndex+2]);
-            devicePoints[deviceIndex].insert(point);
-            ++deviceIndex;
-
-            nextGroupIndex = 3 + (deviceIndex*3);
-            hasMoreDeviceData = doubles.size() >= nextGroupIndex;
+            // Need to add more point set instance.
+            devicePoints.push_back(std::set<Point>());
         }
+        for (std::size_t i = 0 ; i < deviceCount ; ++i)
+        {
+            Point point(
+                doubles[(i*3)+0],
+                doubles[(i*3)+1],
+                doubles[(i*3)+2]
+            );
+            devicePoints[i].insert(point);
+        }
+        doubles.clear();
     }
 
     processDone();
