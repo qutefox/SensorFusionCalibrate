@@ -30,7 +30,21 @@ Application::Application(int argc, char *argv[])
 
 Application::~Application()
 {
+    cleanup();
+}
 
+void Application::cleanup()
+{
+    QWidget* tabWidget = m_mainWindow->ui()->tabWidget->widget(0);
+    QVBoxLayout* tabLayout = qobject_cast<QVBoxLayout*>(tabWidget->layout());
+
+    for (auto& c : m_calibrators)
+    {
+        tabLayout->removeWidget(c.get());
+        c->reset();
+    }
+
+    m_calibrators.clear();
 }
 
 void Application::dataSourceChanged(QString dataSourceName)
@@ -72,8 +86,11 @@ void Application::dataSourceChanged(QString dataSourceName)
 
 void Application::dataSourceOpened()
 {
+    m_mainWindow->ui()->statusbar->clearMessage();
+
     if (!m_dataSource) return;
     if (!m_dataSource->isStream()) m_timer->start(500);
+    else cleanup();
 }
 
 void Application::dataSourceClosed()
@@ -84,7 +101,7 @@ void Application::dataSourceClosed()
 
 void Application::dataSourceFailed(QString errorMessage)
 {
-    // TODO: set statusbar error message
+    m_mainWindow->ui()->statusbar->showMessage(QString("Error: %1").arg(errorMessage));
 }
 
 void Application::dataSourceReadNewPoints(unsigned long count)
@@ -113,7 +130,7 @@ void Application::update()
 
     for (std::size_t i = 0 ; i < deviceCount ; ++i)
     {
-        m_calibrators[i]->addPoints(devicePoints[i]);
+        m_calibrators[i]->addPoints(devicePoints[i]); // Will update the user interface.
     }
 
 }

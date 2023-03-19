@@ -156,9 +156,9 @@ bool CSVFileDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints
         {
             doubleStr.clear();
             matchOffset += match.captured(0).size(); // Total length of the current match (including non-number characters in front).
-            if (match.capturedLength() >= 2)
+            if (match.capturedLength() >= 3)
             {
-                doubleStr = match.captured(1); // The number (soon to be double) of the current match.
+                doubleStr = match.captured(2); // The number (soon to be double) of the current match.
                 doubleNum = doubleStr.toDouble(&doubleConvertedOk);
                 if (doubleConvertedOk)
                 {

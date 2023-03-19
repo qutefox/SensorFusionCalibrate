@@ -108,22 +108,25 @@ void Calibrate::updateUserInterface()
 {
     m_outputLock.lockForRead();
 
-    std::ostringstream oss;
-    oss << m_result;
-    qDebug() << QString::fromStdString(oss.str()) << Qt::endl;
+    const Vector3d& bias = m_result.biasVector;
+    const Matrix3x3d& trMatrix = m_result.transformationMatrix;
 
-    m_biasLineEditX->setText(double2QStr(m_result.biasVector[0]));
-    m_biasLineEditY->setText(double2QStr(m_result.biasVector[1]));
-    m_biasLineEditZ->setText(double2QStr(m_result.biasVector[2]));
-    m_transformationMatrixLineEdit11->setText(double2QStr(m_result.transformationMatrix(0, 0)));
-    m_transformationMatrixLineEdit12->setText(double2QStr(m_result.transformationMatrix(0, 1)));
-    m_transformationMatrixLineEdit13->setText(double2QStr(m_result.transformationMatrix(0, 2)));
-    m_transformationMatrixLineEdit21->setText(double2QStr(m_result.transformationMatrix(1, 0)));
-    m_transformationMatrixLineEdit22->setText(double2QStr(m_result.transformationMatrix(1, 1)));
-    m_transformationMatrixLineEdit23->setText(double2QStr(m_result.transformationMatrix(1, 2)));
-    m_transformationMatrixLineEdit31->setText(double2QStr(m_result.transformationMatrix(2, 0)));
-    m_transformationMatrixLineEdit32->setText(double2QStr(m_result.transformationMatrix(2, 1)));
-    m_transformationMatrixLineEdit33->setText(double2QStr(m_result.transformationMatrix(2, 2)));
+    m_biasLineEditX->setText(double2QStr(bias[0]));
+    m_biasLineEditY->setText(double2QStr(bias[1]));
+    m_biasLineEditZ->setText(double2QStr(bias[2]));
+
+    m_transformationMatrixLineEdit11->setText(double2QStr(trMatrix(0, 0)));
+    m_transformationMatrixLineEdit12->setText(double2QStr(trMatrix(0, 1)));
+    m_transformationMatrixLineEdit13->setText(double2QStr(trMatrix(0, 2)));
+
+    m_transformationMatrixLineEdit21->setText(double2QStr(trMatrix(1, 0)));
+    m_transformationMatrixLineEdit22->setText(double2QStr(trMatrix(1, 1)));
+    m_transformationMatrixLineEdit23->setText(double2QStr(trMatrix(1, 2)));
+
+    m_transformationMatrixLineEdit31->setText(double2QStr(trMatrix(2, 0)));
+    m_transformationMatrixLineEdit32->setText(double2QStr(trMatrix(2, 1)));
+    m_transformationMatrixLineEdit33->setText(double2QStr(trMatrix(2, 2)));
+
     m_outputLock.unlock();
     emit userInterfaceUpdated();
 }

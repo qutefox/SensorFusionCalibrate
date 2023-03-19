@@ -28,6 +28,9 @@ private:
 
     std::vector<std::unique_ptr<Calibrate>> m_calibrators;
 
+public slots:
+    void cleanup();
+
 private slots:
     void dataSourceChanged(QString dataSourceName);
     void dataSourceOpened();
