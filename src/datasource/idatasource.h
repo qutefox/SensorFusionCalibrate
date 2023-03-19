@@ -22,6 +22,6 @@ signals:
     void opened();
     void failed(QString errorMessage);
     void closed();
-    void readNewPoints(unsigned long count);
+    void dataAvailable();
 
 };

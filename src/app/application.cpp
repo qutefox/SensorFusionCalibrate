@@ -87,8 +87,8 @@ void Application::dataSourceChanged(QString dataSourceName)
             this, SLOT(dataSourceFailed(QString))
         );
         connect(
-            m_dataSource.get(), SIGNAL(readNewPoints(unsigned long)),
-            this, SLOT(dataSourceReadNewPoints(unsigned long))
+            m_dataSource.get(), SIGNAL(dataAvailable()),
+            this, SLOT(dataSourceDataAvailable())
         );
     }
 }
@@ -113,7 +113,7 @@ void Application::dataSourceFailed(QString errorMessage)
     m_mainWindow->ui()->statusbar->showMessage(QString("Error: %1").arg(errorMessage));
 }
 
-void Application::dataSourceReadNewPoints(unsigned long count)
+void Application::dataSourceDataAvailable()
 {
     update();
 }

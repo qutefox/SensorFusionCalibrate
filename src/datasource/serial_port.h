@@ -27,6 +27,8 @@ public:
 private slots:
     void update();
     void serialPortChanged(QString newText);
+    void readyRead();
+    void processButtonReleased();
 
 private:
     QComboBox* m_portComboBox;

@@ -5,6 +5,8 @@
 #include <QHBoxLayout>
 #include <QSpacerItem>
 
+#include "parse_numbers.h"
+
 SerialPortDataSource::SerialPortDataSource(QWidget* parent)
     : IDataSource{ parent }
     , m_timer{ new QTimer(this) }
@@ -12,7 +14,14 @@ SerialPortDataSource::SerialPortDataSource(QWidget* parent)
     m_portComboBox = new QComboBox();
     m_portComboBox->setMinimumWidth(250);
     m_portComboBox->addItem("", "");
+
     m_baudComboBox = new QComboBox();
+    for (int baud :QSerialPortInfo::standardBaudRates())
+    {
+        m_baudComboBox->addItem(QString::number(baud), baud);
+    }
+    int baudIndex = m_baudComboBox->findData(115200);
+    if (baudIndex != -1) m_baudComboBox->setCurrentIndex(baudIndex);
 
     m_toolButtonConfig =  new QToolButton();
     m_toolButtonConfig->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
@@ -39,6 +48,16 @@ SerialPortDataSource::SerialPortDataSource(QWidget* parent)
         this, SLOT(serialPortChanged(QString))
     );
 
+    connect(
+        &m_serial, SIGNAL(readyRead()),
+        this, SLOT(readyRead())
+    );
+
+    connect(
+        m_toolButtonProcess, SIGNAL(released()),
+        this, SLOT(processButtonReleased())
+    );
+
     connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
     m_timer->start(1000);
 }
@@ -52,12 +71,17 @@ SerialPortDataSource::~SerialPortDataSource()
 bool SerialPortDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints)
 {
     devicePoints.clear();
+    bool gotData = false;
 
-    if (!m_serial.isOpen()) return false;
+    while (m_serial.isOpen() && m_serial.canReadLine())
+    {
+        QByteArray lineByteArray = m_serial.readLine();
+        // TODO: future feature possibility to add a serial terminal.
+        qDebug() << QString(lineByteArray);
+        gotData |= parseLineToDeviceData(lineByteArray.toStdString(), devicePoints);
+    }
 
-    // TODO: read serial data and parse line by line similarly as in csv_file.cpp
-
-    return false;
+    return gotData;
 }
 
 void SerialPortDataSource::update()
@@ -141,23 +165,113 @@ void SerialPortDataSource::serialPortChanged(QString newText)
 
     QString selectedSerialPort = currentPortComboBoxString();
 
-    /*
     if (!m_serial.isOpen())
     {
-        if (selectedSerialPort == "")
+        if (selectedSerialPort.isEmpty())
         {
-
-            // button->setText("Select a port");
-            // button->setStyleSheet("QPushButton {color:black;}");
-            // button->setDisabled(true);
+            m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+            m_toolButtonProcess->setStyleSheet("QPushButton{color:black;}");
+            m_toolButtonProcess->setText("Open");
+            m_toolButtonProcess->setEnabled(false);
         }
         else
         {
-            // button->setText("Open");
-            // button->setStyleSheet("QPushButton {color:green;}");
-            // button->setDisabled(false);
+            m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+            m_toolButtonProcess->setStyleSheet("QPushButton{color:green;}");
+            m_toolButtonProcess->setText("Open");
+            m_toolButtonProcess->setEnabled(true);
         }
         return;
     }
-    */
+
+    if (selectedSerialPort != m_serial.portName())
+    {
+        m_serial.close();
+        m_serialOpen = false;
+
+        if (selectedSerialPort.isEmpty())
+        {
+            m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+            m_toolButtonProcess->setStyleSheet("QPushButton{color:black;}");
+            m_toolButtonProcess->setText("Open");
+            m_toolButtonProcess->setEnabled(false);
+        }
+        else
+        {
+            m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+            m_toolButtonProcess->setStyleSheet("QPushButton{color:green;}");
+            m_toolButtonProcess->setText("Open");
+            m_toolButtonProcess->setEnabled(true);
+        }
+        return;
+    }
+
+    int selectedBaudRate = m_baudComboBox->itemData(m_baudComboBox->currentIndex()).toInt();
+    if (selectedBaudRate != m_serial.baudRate())
+    {
+        m_serial.setBaudRate(selectedBaudRate);
+    }
+}
+
+void SerialPortDataSource::processButtonReleased()
+{
+    QString selectedSerialPort = currentPortComboBoxString();
+
+    if (selectedSerialPort.isEmpty())
+    {
+        m_serial.close();
+        m_serialOpen = false;
+
+        m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+        m_toolButtonProcess->setStyleSheet("QPushButton{color:black;}");
+        m_toolButtonProcess->setText("Open");
+        m_toolButtonProcess->setEnabled(false);
+        return;
+    }
+
+    if (m_serial.isOpen())
+    {
+        m_serial.close();
+        m_serialOpen = false;
+
+        m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+        m_toolButtonProcess->setStyleSheet("QPushButton{color:green;}");
+        m_toolButtonProcess->setText("Open");
+        m_toolButtonProcess->setEnabled(true);
+    }
+    else
+    {
+        int selectedBaudRate = m_baudComboBox->itemData(m_baudComboBox->currentIndex()).toInt();
+
+        m_serial.setPortName(selectedSerialPort);
+        m_serial.setBaudRate(selectedBaudRate);
+        m_serial.setDataBits(QSerialPort::DataBits::Data8);
+        m_serial.setParity(QSerialPort::Parity::NoParity);
+        m_serial.setStopBits(QSerialPort::StopBits::OneStop);
+        m_serial.setFlowControl(QSerialPort::FlowControl::NoFlowControl);
+
+        if (m_serial.open(QIODevice::ReadWrite))
+        {
+            m_serialOpen = true;
+
+            m_toolButtonProcess->setIcon(QIcon(":/images/close-black.png"));
+            m_toolButtonProcess->setStyleSheet("QPushButton{color:orange;}");
+            m_toolButtonProcess->setText("Close");
+            m_toolButtonProcess->setEnabled(true);
+        }
+        else
+        {
+            m_serialOpen = false;
+
+            m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+            m_toolButtonProcess->setStyleSheet("QPushButton{color:red;}");
+            m_toolButtonProcess->setText("Open");
+            m_toolButtonProcess->setEnabled(true);
+        }
+    }
+}
+
+void SerialPortDataSource::readyRead()
+{
+    emit dataAvailable();
 }

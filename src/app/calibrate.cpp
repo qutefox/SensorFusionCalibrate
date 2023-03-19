@@ -89,7 +89,7 @@ Calibrate::Calibrate(int deviceId, QWidget* parent)
     groupBox->setTitle("Device " + QString::number(deviceId));
     groupBox->setLayout(layout);
 
-    setWidgetPrecision(4);
+    setWidgetPrecision(8);
 }
 
 void Calibrate::setWidgetPrecision(int precision)

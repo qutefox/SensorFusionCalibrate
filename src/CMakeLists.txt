@@ -43,6 +43,8 @@ set(PROJECT_SOURCES
         data/calibration_result.h
         data/calibration_result.cpp
 
+        datasource/parse_numbers.h
+        datasource/parse_numbers.cpp
         datasource/idatasource.h
         datasource/csv_file.h
         datasource/csv_file.cpp
