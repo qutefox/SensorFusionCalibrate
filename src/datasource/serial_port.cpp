@@ -21,8 +21,8 @@ SerialPortDataSource::SerialPortDataSource(QWidget* parent)
 
     m_toolButtonProcess =  new QToolButton();
     m_toolButtonProcess->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_toolButtonProcess->setIcon(QIcon(":/images/process-black.png"));
-    m_toolButtonProcess->setText("Process");
+    m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+    m_toolButtonProcess->setText("Open");
     m_toolButtonProcess->setEnabled(false);
 
     QHBoxLayout* layout = new QHBoxLayout(this);
@@ -87,7 +87,7 @@ QString SerialPortDataSource::currentPortComboBoxString() const
 void SerialPortDataSource::updateSerialList()
 {
     QList<QSerialPortInfo> serialPorts = QSerialPortInfo::availablePorts();
-    QString prevPort = currentPortComboBoxString();
+    QString prevSerialPort = currentPortComboBoxString();
 
     QString itemData;
     bool found = false;
@@ -119,9 +119,9 @@ void SerialPortDataSource::updateSerialList()
         m_portComboBox->addItem(serialName, QVariant(serialPort.portName()));
     }
 
-    QString afterPort = currentPortComboBoxString();
+    QString afterSerialPort = currentPortComboBoxString();
 
-    if (prevPort != afterPort)
+    if (prevSerialPort != afterSerialPort)
     {
         int portIndex = m_portComboBox->findData("");
         if (portIndex != -1) m_portComboBox->setCurrentIndex(portIndex);
@@ -131,28 +131,31 @@ void SerialPortDataSource::updateSerialList()
 
     if (m_serialOpen != m_serial.isOpen())
     {
-        serialPortChanged(afterPort);
+        serialPortChanged(afterSerialPort);
     }
 }
 
 void SerialPortDataSource::serialPortChanged(QString newText)
 {
+    Q_UNUSED(newText)
 
+    QString selectedSerialPort = currentPortComboBoxString();
 
     /*
-    if (!m_serial->isOpen())
+    if (!m_serial.isOpen())
     {
         if (selectedSerialPort == "")
         {
-            button->setText("Select a port");
-            button->setStyleSheet("QPushButton {color:black;}");
-            button->setDisabled(true);
+
+            // button->setText("Select a port");
+            // button->setStyleSheet("QPushButton {color:black;}");
+            // button->setDisabled(true);
         }
         else
         {
-            button->setText("Open");
-            button->setStyleSheet("QPushButton {color:green;}");
-            button->setDisabled(false);
+            // button->setText("Open");
+            // button->setStyleSheet("QPushButton {color:green;}");
+            // button->setDisabled(false);
         }
         return;
     }

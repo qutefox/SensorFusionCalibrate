@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file>images/open-file-black.png</file>
-        <file>images/open-file-white.png</file>
+        <file>images/open-black.png</file>
+        <file>images/open-white.png</file>
         <file>images/process-black.png</file>
         <file>images/process-white.png</file>
         <file>images/cancel-white.png</file>
@@ -12,5 +12,9 @@
         <file>images/fail-white.png</file>
         <file>images/config-black.png</file>
         <file>images/config-white.png</file>
+        <file>images/connect-black.png</file>
+        <file>images/connect-white.png</file>
+        <file>images/close-black.png</file>
+        <file>images/close-white.png</file>
     </qresource>
 </RCC>

@@ -16,7 +16,7 @@ CSVFileDataSource::CSVFileDataSource(QWidget* parent)
 
     m_toolButtonChoose = new QToolButton();
     m_toolButtonChoose->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_toolButtonChoose->setIcon(QIcon(":/images/open-file-black.png"));
+    m_toolButtonChoose->setIcon(QIcon(":/images/open-black.png"));
     m_toolButtonChoose->setText("Choose file");
 
     m_toolButtonProcess =  new QToolButton();
