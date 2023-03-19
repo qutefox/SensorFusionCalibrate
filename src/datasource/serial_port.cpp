@@ -99,13 +99,14 @@ void SerialPortDataSource::updateSerialList()
         found = false;
         for (const QSerialPortInfo& serialPort : serialPorts)
         {
-            if (!serialPort.hasVendorIdentifier()) break;
+            if (!serialPort.hasVendorIdentifier()) continue;
             if (itemData == serialPort.portName())
             {
                 found = true;
                 break;
             }
         }
+
         if (!found) m_portComboBox->removeItem(i);
     }
 
@@ -119,8 +120,6 @@ void SerialPortDataSource::updateSerialList()
     }
 
     QString afterPort = currentPortComboBoxString();
-
-    qDebug() << "prev: '" << prevPort << "', after: '" << afterPort << "'." << Qt::endl;
 
     if (prevPort != afterPort)
     {
@@ -138,6 +137,8 @@ void SerialPortDataSource::updateSerialList()
 
 void SerialPortDataSource::serialPortChanged(QString newText)
 {
+
+
     /*
     if (!m_serial->isOpen())
     {
