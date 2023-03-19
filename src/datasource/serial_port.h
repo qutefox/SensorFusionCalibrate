@@ -29,14 +29,18 @@ private slots:
     void serialPortChanged(QString newText);
     void readyRead();
     void processButtonReleased();
+    void onSerialError(QSerialPort::SerialPortError);
+    void exitReadLoop();
 
 private:
     QComboBox* m_portComboBox;
     QComboBox* m_baudComboBox;
     QToolButton* m_toolButtonConfig;
     QToolButton* m_toolButtonProcess;
-    QTimer* m_timer;
+    QTimer* m_timer = nullptr;
+    QTimer* m_readLoopTimer = nullptr;
     bool m_serialOpen = false;
+    bool m_exitReadLoop = false;
     QSerialPort m_serial;
 
     QString GenerateReadableSerialPortName(const QSerialPortInfo& serialPort);

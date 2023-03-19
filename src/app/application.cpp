@@ -95,8 +95,6 @@ void Application::dataSourceChanged(QString dataSourceName)
 
 void Application::dataSourceOpened()
 {
-    m_mainWindow->ui()->statusbar->clearMessage();
-
     if (!m_dataSource) return;
     if (!m_dataSource->isStream()) m_timer->start(500);
     else cleanup();
@@ -110,7 +108,8 @@ void Application::dataSourceClosed()
 
 void Application::dataSourceFailed(QString errorMessage)
 {
-    m_mainWindow->ui()->statusbar->showMessage(QString("Error: %1").arg(errorMessage));
+    // Show error message for 10 seconds.
+    m_mainWindow->ui()->statusbar->showMessage(QString("Error: %1").arg(errorMessage), 10000);
 }
 
 void Application::dataSourceDataAvailable()

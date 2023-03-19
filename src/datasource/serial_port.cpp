@@ -10,9 +10,10 @@
 SerialPortDataSource::SerialPortDataSource(QWidget* parent)
     : IDataSource{ parent }
     , m_timer{ new QTimer(this) }
+    , m_readLoopTimer{ new QTimer(this) }
 {
     m_portComboBox = new QComboBox();
-    m_portComboBox->setMinimumWidth(250);
+    m_portComboBox->setMinimumWidth(220);
     m_portComboBox->addItem("", "");
 
     m_baudComboBox = new QComboBox();
@@ -30,6 +31,7 @@ SerialPortDataSource::SerialPortDataSource(QWidget* parent)
 
     m_toolButtonProcess =  new QToolButton();
     m_toolButtonProcess->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_toolButtonProcess->setStyleSheet("QToolButton{color:black;}");
     m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
     m_toolButtonProcess->setText("Open");
     m_toolButtonProcess->setEnabled(false);
@@ -54,12 +56,26 @@ SerialPortDataSource::SerialPortDataSource(QWidget* parent)
     );
 
     connect(
+        &m_serial, SIGNAL(errorOccurred(QSerialPort::SerialPortError)),
+        this, SLOT(onSerialError(QSerialPort::SerialPortError))
+    );
+
+    connect(
         m_toolButtonProcess, SIGNAL(released()),
         this, SLOT(processButtonReleased())
     );
 
-    connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
-    m_timer->start(1000);
+    connect(
+        m_timer, SIGNAL(timeout()),
+        this, SLOT(update())
+    );
+    m_timer->start(2000);
+
+    m_readLoopTimer->setSingleShot(true);
+    connect(
+        m_readLoopTimer, SIGNAL(timeout()),
+        this, SLOT()
+    );
 }
 
 SerialPortDataSource::~SerialPortDataSource()
@@ -68,12 +84,20 @@ SerialPortDataSource::~SerialPortDataSource()
     m_serial.close();
 }
 
+void SerialPortDataSource::exitReadLoop()
+{
+    m_exitReadLoop = true;
+}
+
 bool SerialPortDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints)
 {
     devicePoints.clear();
     bool gotData = false;
 
-    while (m_serial.isOpen() && m_serial.canReadLine())
+    m_readLoopTimer->start(250);
+
+    m_exitReadLoop = false;
+    while (m_serial.isOpen() && m_serial.canReadLine() && !m_exitReadLoop)
     {
         QByteArray lineByteArray = m_serial.readLine();
         // TODO: future feature possibility to add a serial terminal.
@@ -170,14 +194,14 @@ void SerialPortDataSource::serialPortChanged(QString newText)
         if (selectedSerialPort.isEmpty())
         {
             m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
-            m_toolButtonProcess->setStyleSheet("QPushButton{color:black;}");
+            m_toolButtonProcess->setStyleSheet("QToolButton{color:black;}");
             m_toolButtonProcess->setText("Open");
             m_toolButtonProcess->setEnabled(false);
         }
         else
         {
             m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
-            m_toolButtonProcess->setStyleSheet("QPushButton{color:green;}");
+            m_toolButtonProcess->setStyleSheet("QToolButton{color:green;}");
             m_toolButtonProcess->setText("Open");
             m_toolButtonProcess->setEnabled(true);
         }
@@ -192,14 +216,14 @@ void SerialPortDataSource::serialPortChanged(QString newText)
         if (selectedSerialPort.isEmpty())
         {
             m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
-            m_toolButtonProcess->setStyleSheet("QPushButton{color:black;}");
+            m_toolButtonProcess->setStyleSheet("QToolButton{color:black;}");
             m_toolButtonProcess->setText("Open");
             m_toolButtonProcess->setEnabled(false);
         }
         else
         {
             m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
-            m_toolButtonProcess->setStyleSheet("QPushButton{color:green;}");
+            m_toolButtonProcess->setStyleSheet("QToolButton{color:green;}");
             m_toolButtonProcess->setText("Open");
             m_toolButtonProcess->setEnabled(true);
         }
@@ -223,7 +247,7 @@ void SerialPortDataSource::processButtonReleased()
         m_serialOpen = false;
 
         m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
-        m_toolButtonProcess->setStyleSheet("QPushButton{color:black;}");
+        m_toolButtonProcess->setStyleSheet("QToolButton{color:black;}");
         m_toolButtonProcess->setText("Open");
         m_toolButtonProcess->setEnabled(false);
         return;
@@ -235,7 +259,7 @@ void SerialPortDataSource::processButtonReleased()
         m_serialOpen = false;
 
         m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
-        m_toolButtonProcess->setStyleSheet("QPushButton{color:green;}");
+        m_toolButtonProcess->setStyleSheet("QToolButton{color:green;}");
         m_toolButtonProcess->setText("Open");
         m_toolButtonProcess->setEnabled(true);
     }
@@ -255,7 +279,7 @@ void SerialPortDataSource::processButtonReleased()
             m_serialOpen = true;
 
             m_toolButtonProcess->setIcon(QIcon(":/images/close-black.png"));
-            m_toolButtonProcess->setStyleSheet("QPushButton{color:orange;}");
+            m_toolButtonProcess->setStyleSheet("QToolButton{color:orange;}");
             m_toolButtonProcess->setText("Close");
             m_toolButtonProcess->setEnabled(true);
         }
@@ -264,7 +288,7 @@ void SerialPortDataSource::processButtonReleased()
             m_serialOpen = false;
 
             m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
-            m_toolButtonProcess->setStyleSheet("QPushButton{color:red;}");
+            m_toolButtonProcess->setStyleSheet("QToolButton{color:red;}");
             m_toolButtonProcess->setText("Open");
             m_toolButtonProcess->setEnabled(true);
         }
@@ -275,3 +299,10 @@ void SerialPortDataSource::readyRead()
 {
     emit dataAvailable();
 }
+
+void SerialPortDataSource::onSerialError(QSerialPort::SerialPortError error)
+{
+    if (error == QSerialPort::SerialPortError::NoError) return;
+    emit failed(m_serial.errorString());
+}
+
