@@ -16,5 +16,8 @@
         <file>images/connect-white.png</file>
         <file>images/close-black.png</file>
         <file>images/close-white.png</file>
+        <file>images/save-settings-black.png</file>
+        <file>images/save-settings-green.png</file>
+        <file>images/save-settings-white.png</file>
     </qresource>
 </RCC>

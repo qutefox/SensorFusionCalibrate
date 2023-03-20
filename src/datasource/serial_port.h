@@ -10,7 +10,7 @@
 #include <QTimer>
 
 #include "idatasource.h"
-
+#include "../widget/serialport_config_dialog.h"
 
 class SerialPortDataSource : public IDataSource
 {
@@ -31,8 +31,11 @@ private slots:
     void processButtonReleased();
     void onSerialError(QSerialPort::SerialPortError);
     void exitReadLoop();
+    void openConfigWindow();
+    void saveSerialConfig();
 
 private:
+    SerialPortConfigDialog* m_configDialog;
     QComboBox* m_portComboBox;
     QComboBox* m_baudComboBox;
     QToolButton* m_toolButtonConfig;

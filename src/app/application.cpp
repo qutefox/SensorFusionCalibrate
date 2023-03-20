@@ -83,7 +83,7 @@ void Application::dataSourceChanged(QString dataSourceName)
             this, SLOT(dataSourceClosed())
         );
         connect(
-            m_dataSource.get(), SIGNAL(failed(QString)),
+            m_dataSource.get(), SIGNAL(errorOccured(QString)),
             this, SLOT(dataSourceFailed(QString))
         );
         connect(

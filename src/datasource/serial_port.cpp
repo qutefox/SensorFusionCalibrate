@@ -11,6 +11,7 @@ SerialPortDataSource::SerialPortDataSource(QWidget* parent)
     : IDataSource{ parent }
     , m_timer{ new QTimer(this) }
     , m_readLoopTimer{ new QTimer(this) }
+    , m_configDialog{ new SerialPortConfigDialog(this) }
 {
     m_portComboBox = new QComboBox();
     m_portComboBox->setMinimumWidth(220);
@@ -66,16 +67,26 @@ SerialPortDataSource::SerialPortDataSource(QWidget* parent)
     );
 
     connect(
-        m_timer, SIGNAL(timeout()),
-        this, SLOT(update())
+        m_toolButtonConfig, SIGNAL(released()),
+        this, SLOT(openConfigWindow())
     );
-    m_timer->start(2000);
+
+    connect(
+        m_configDialog, SIGNAL(accepted()),
+        this, SLOT(saveSerialConfig())
+    );
 
     m_readLoopTimer->setSingleShot(true);
     connect(
         m_readLoopTimer, SIGNAL(timeout()),
-        this, SLOT()
+        this, SLOT(exitReadLoop())
     );
+
+    connect(
+        m_timer, SIGNAL(timeout()),
+        this, SLOT(update())
+    );
+    m_timer->start(2000);
 }
 
 SerialPortDataSource::~SerialPortDataSource()
@@ -269,10 +280,10 @@ void SerialPortDataSource::processButtonReleased()
 
         m_serial.setPortName(selectedSerialPort);
         m_serial.setBaudRate(selectedBaudRate);
-        m_serial.setDataBits(QSerialPort::DataBits::Data8);
-        m_serial.setParity(QSerialPort::Parity::NoParity);
-        m_serial.setStopBits(QSerialPort::StopBits::OneStop);
-        m_serial.setFlowControl(QSerialPort::FlowControl::NoFlowControl);
+        m_serial.setDataBits(m_configDialog->getDataBits());
+        m_serial.setParity(m_configDialog->getParity());
+        m_serial.setStopBits(m_configDialog->getStopBits());
+        m_serial.setFlowControl(m_configDialog->getFlowControl());
 
         if (m_serial.open(QIODevice::ReadWrite))
         {
@@ -303,6 +314,40 @@ void SerialPortDataSource::readyRead()
 void SerialPortDataSource::onSerialError(QSerialPort::SerialPortError error)
 {
     if (error == QSerialPort::SerialPortError::NoError) return;
-    emit failed(m_serial.errorString());
+    emit errorOccurred(m_serial.errorString());
 }
 
+void SerialPortDataSource::openConfigWindow()
+{
+    m_configDialog->show();
+}
+
+void SerialPortDataSource::saveSerialConfig()
+{
+    if (!m_serial.isOpen()) return;
+
+    m_serial.close();
+    m_serial.setDataBits(m_configDialog->getDataBits());
+    m_serial.setParity(m_configDialog->getParity());
+    m_serial.setStopBits(m_configDialog->getStopBits());
+    m_serial.setFlowControl(m_configDialog->getFlowControl());
+
+    if (m_serial.open(QIODevice::ReadWrite))
+    {
+        m_serialOpen = true;
+
+        m_toolButtonProcess->setIcon(QIcon(":/images/close-black.png"));
+        m_toolButtonProcess->setStyleSheet("QToolButton{color:orange;}");
+        m_toolButtonProcess->setText("Close");
+        m_toolButtonProcess->setEnabled(true);
+    }
+    else
+    {
+        m_serialOpen = false;
+
+        m_toolButtonProcess->setIcon(QIcon(":/images/open-black.png"));
+        m_toolButtonProcess->setStyleSheet("QToolButton{color:red;}");
+        m_toolButtonProcess->setText("Open");
+        m_toolButtonProcess->setEnabled(true);
+    }
+}

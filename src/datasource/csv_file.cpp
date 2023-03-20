@@ -140,7 +140,7 @@ void CSVFileDataSource::processFailed()
     m_toolButtonProcess->setEnabled(false);
     m_lineEdit->setEnabled(true);
     m_toolButtonChoose->setEnabled(true);
-    emit failed(m_csvFile.errorString());
+    emit errorOccurred(m_csvFile.errorString());
 }
 
 bool CSVFileDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints)

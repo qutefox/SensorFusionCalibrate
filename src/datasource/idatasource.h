@@ -17,10 +17,9 @@ public:
     virtual bool getNextPoints(std::vector<std::set<Point>>& devicePoints) = 0;
     virtual bool isStream() const = 0;
 
-
 signals:
     void opened();
-    void failed(QString errorMessage);
+    void errorOccurred(QString);
     void closed();
     void dataAvailable();
 

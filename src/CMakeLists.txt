@@ -58,9 +58,15 @@ set(PROJECT_SOURCES
         app/calibrate.h
         app/calibrate.cpp
 
+        widget/serialport_config_dialog.cpp
+        widget/serialport_config_dialog.h
+        widget/serialport_config_dialog.ui
+
         widget/mainwindow.cpp
         widget/mainwindow.h
         widget/mainwindow.ui
+
+
 
         resources/resources.qrc
 )
