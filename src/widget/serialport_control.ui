@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SerialPortControlWidget</class>
+ <widget class="QWidget" name="SerialPortControlWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>704</width>
+    <height>55</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>600</width>
+    <height>55</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Serial Port Configuration</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../resources/resources.qrc">
+    <normaloff>:/images/calibrate-black.png</normaloff>:/images/calibrate-black.png</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+   <property name="spacing">
+    <number>3</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0,0">
+     <property name="spacing">
+      <number>9</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="portLabel">
+       <property name="text">
+        <string>Serial Port: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="serialComboBox"/>
+     </item>
+     <item>
+      <widget class="QToolButton" name="processToolButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QToolButton{color:red;}</string>
+       </property>
+       <property name="text">
+        <string>Open</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="autoConnectCheckBox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Auto connect</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,0,1,0,1,0,1,0,1">
+     <item>
+      <widget class="QLabel" name="baudLabel">
+       <property name="text">
+        <string>Baud rate: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="baudComboBox"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="dataBitsLabel">
+       <property name="text">
+        <string>Data bits: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="dataBitsComboBox"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="parityLabel">
+       <property name="text">
+        <string>Parity: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="parityComboBox"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="stopBitsLabel">
+       <property name="text">
+        <string>Stop bits: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="stopBitsComboBox"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="flowControlLabel">
+       <property name="text">
+        <string>Flow Control: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="flowControlComboBox"/>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

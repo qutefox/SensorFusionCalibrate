@@ -19,5 +19,8 @@
         <file>images/save-settings-black.png</file>
         <file>images/save-settings-green.png</file>
         <file>images/save-settings-white.png</file>
+        <file>usb.ids</file>
+        <file>images/calibrate-black.png</file>
+        <file>images/calibrate-white.png</file>
     </qresource>
 </RCC>

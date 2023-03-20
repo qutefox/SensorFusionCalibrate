@@ -1,8 +1,8 @@
-#include "parse_numbers.h"
+#include "line_parser.h"
 
 #include <regex>
 
-std::regex numRegex(R"((.*?((-?)([\d]+)(\.[\d]+)?)))");
+const std::regex numRegex(R"((.*?((-?)([\d]+)(\.[\d]+)?)))");
 
 std::vector<double> parseNumbersFromLine(const std::string& line)
 {

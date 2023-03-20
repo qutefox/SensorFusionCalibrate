@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wa,-mbig-obj") # required for Eigen::EigenSolver
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets SerialPort)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets SerialPort)
 
@@ -42,14 +44,22 @@ set(PROJECT_SOURCES
         data/point.cpp
         data/calibration_result.h
         data/calibration_result.cpp
+        data/serialport_config.h
+        data/serialport_config.cpp
+        data/serialport_id_match.h
+        data/serialport_id_match.cpp
 
-        datasource/parse_numbers.h
-        datasource/parse_numbers.cpp
-        datasource/idatasource.h
-        datasource/csv_file.h
-        datasource/csv_file.cpp
-        datasource/serial_port.h
-        datasource/serial_port.cpp
+        datasource/line_parser.h
+        datasource/line_parser.cpp
+        datasource/data_source_interface.h
+
+        datasource/file/csv_file.h
+        datasource/file/csv_file.cpp
+
+        datasource/serial/serialport.h
+        datasource/serial/serialport.cpp
+        datasource/serial/id_matcher.h
+        datasource/serial/id_matcher.cpp
 
         app/application.h
         app/application.cpp
@@ -58,14 +68,17 @@ set(PROJECT_SOURCES
         app/calibrate.h
         app/calibrate.cpp
 
-        widget/serialport_config_dialog.cpp
-        widget/serialport_config_dialog.h
-        widget/serialport_config_dialog.ui
+        widget/csv_file_control.cpp
+        widget/csv_file_control.h
+        widget/csv_file_control.ui
 
-        widget/mainwindow.cpp
-        widget/mainwindow.h
-        widget/mainwindow.ui
+        widget/serialport_control.cpp
+        widget/serialport_control.h
+        widget/serialport_control.ui
 
+        widget/main_window.cpp
+        widget/main_window.h
+        widget/main_window.ui
 
 
         resources/resources.qrc

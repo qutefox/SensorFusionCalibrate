@@ -9,8 +9,8 @@
 #include "calibrate.h"
 #include "settings.h"
 
-#include "../widget/mainwindow.h"
-#include "../datasource/idatasource.h"
+#include <widget/main_window.h>
+#include <datasource/data_source_interface.h>
 
 class Application : public QApplication
 {

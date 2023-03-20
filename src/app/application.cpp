@@ -1,31 +1,32 @@
 #include <QHBoxLayout>
 
 #include "application.h"
-#include "../widget/ui_mainwindow.h"
-#include "../datasource/csv_file.h"
-#include "../datasource/serial_port.h"
+
+#include "../widget/ui_main_window.h"
+
+#include <datasource/file/csv_file.h>
+#include <datasource/serial/serialport.h>
 
 Application::Application(int argc, char *argv[])
     : QApplication{ argc, argv }
     , m_mainWindow{ new MainWindow() }
     , m_timer{ new QTimer(this) }
 {
+    QComboBox* dataSourceComboBox = m_mainWindow->ui()->dataSourceComboBox;
 
-    m_mainWindow->ui()->dataSourceComboBox->addItems(
-        {
-            CSVFileDataSource::getName(),
-            SerialPortDataSource::getName()
-        }
+    dataSourceComboBox->addItems({
+        CSVFileDataSource::getName(),
+        SerialPortDataSource::getName()
+    });
+
+    connect(
+        dataSourceComboBox, &QComboBox::currentTextChanged,
+        this, &Application::dataSourceChanged
     );
 
     connect(
-        m_mainWindow->ui()->dataSourceComboBox, SIGNAL(currentTextChanged(QString)),
-        this, SLOT(dataSourceChanged(QString))
-    );
-
-    connect(
-        m_timer, SIGNAL(timeout()),
-        this, SLOT(update())
+        m_timer, &QTimer::timeout,
+        this, &Application::update
     );
 
     m_mainWindow->show();
@@ -57,38 +58,39 @@ void Application::dataSourceChanged(QString dataSourceName)
 
     if (m_dataSource)
     {
-        dataSourceLayout->removeWidget(m_dataSource.get());
+        dataSourceLayout->removeWidget(m_dataSource->widget());
     }
 
     m_dataSource.reset();
 
     if (dataSourceName == CSVFileDataSource::getName())
     {
-        m_dataSource = std::make_unique<CSVFileDataSource>(dataSourceWidget);
+        m_dataSource = std::make_unique<CSVFileDataSource>("", dataSourceWidget);
     }
     else if (dataSourceName == SerialPortDataSource::getName())
     {
-        m_dataSource = std::make_unique<SerialPortDataSource>(dataSourceWidget);
+        m_dataSource = std::make_unique<SerialPortDataSource>(SerialPortConfig(), dataSourceWidget);
     }
 
     if (m_dataSource)
     {
-        dataSourceLayout->addWidget(m_dataSource.get());
+        dataSourceLayout->addWidget(m_dataSource->widget());
+
         connect(
-            m_dataSource.get(), SIGNAL(opened()),
-            this, SLOT(dataSourceOpened())
+            m_dataSource.get(), &IDataSource::opened,
+            this, &Application::dataSourceOpened
         );
         connect(
-            m_dataSource.get(), SIGNAL(closed()),
-            this, SLOT(dataSourceClosed())
+            m_dataSource.get(), &IDataSource::closed,
+            this, &Application::dataSourceClosed
         );
         connect(
-            m_dataSource.get(), SIGNAL(errorOccured(QString)),
-            this, SLOT(dataSourceFailed(QString))
+            m_dataSource.get(), &IDataSource::errorOccurred,
+            this, &Application::dataSourceFailed
         );
         connect(
-            m_dataSource.get(), SIGNAL(dataAvailable()),
-            this, SLOT(dataSourceDataAvailable())
+            m_dataSource.get(), &IDataSource::dataAvailable,
+            this, &Application::dataSourceDataAvailable
         );
     }
 }
