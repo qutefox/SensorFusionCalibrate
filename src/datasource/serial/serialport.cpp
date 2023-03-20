@@ -2,6 +2,8 @@
 
 #include <datasource/line_parser.h>
 
+constexpr char ESC = '\x1B';
+
 SerialPortDataSource::SerialPortDataSource(const SerialPortConfig& config, QObject* parent)
     : IDataSource{ parent }
     , m_timer{ new QTimer(this) }

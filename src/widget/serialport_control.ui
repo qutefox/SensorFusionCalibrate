@@ -42,7 +42,7 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0,0">
      <property name="spacing">
-      <number>9</number>
+      <number>7</number>
      </property>
      <item>
       <widget class="QLabel" name="portLabel">
@@ -84,6 +84,9 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,0,1,0,1,0,1,0,1">
+     <property name="spacing">
+      <number>7</number>
+     </property>
      <item>
       <widget class="QLabel" name="baudLabel">
        <property name="text">

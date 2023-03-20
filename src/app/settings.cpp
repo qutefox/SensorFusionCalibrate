@@ -10,25 +10,62 @@ Settings::~Settings()
     m_settings.reset();
 }
 
-DataSourceType Settings::getDataSourceType() const
+QString Settings::getDataSourceType() const
 {
     QString tmp = m_settings->value("dataSourceType").toString();
-    if (tmp == "serial") return DataSourceType::SERIAL_PORT;
-    return DataSourceType::CSV_FILE;
+    if (tmp == "csv_file" || tmp == "serial") return tmp;
+    return "";
 }
 
-void Settings::setDataSourceType(DataSourceType t)
+void Settings::setDataSourceType(const QString& dataSourceType)
 {
-    QString tmp;
-    switch (t)
+    if (dataSourceType == "csv_file" || dataSourceType == "serial")
     {
-    case DataSourceType::CSV_FILE:
-        tmp = "csv_file";
-        break;
-    case DataSourceType::SERIAL_PORT:
-        tmp = "serial";
-        break;
+        m_settings->setValue("dataSourceType", dataSourceType);
     }
-    if (tmp.isEmpty()) return;
-    m_settings->setValue("dataSourceType", tmp);
+    else m_settings->setValue("dataSourceType", "");
+}
+
+QString Settings::getCSVFilePath() const
+{
+    return m_settings->value("csvFilePath").toString();
+}
+
+void Settings::setCSVFilePath(const QString& filePath)
+{
+    m_settings->setValue("csvFilePath", filePath);
+}
+
+SerialPortConfig Settings::getSerialPortConfig() const
+{
+    SerialPortConfig config;
+    int tmp;
+    config.m_portName = m_settings->value("serialPortName").toString();
+    config.m_autoConnectPortName = m_settings->value("serialPortAutoConnectPortName").toString();
+    config.m_baudRate = m_settings->value("serialPortBaudRate").toUInt();
+
+    tmp = m_settings->value("serialPortDataBits").toInt();
+    config.m_dataBits = QSerialPort::DataBits(tmp);
+
+    tmp = m_settings->value("serialPortParity").toInt();
+    config.m_parity = QSerialPort::Parity(tmp);
+
+    tmp = m_settings->value("serialPortStopBits").toInt();
+    config.m_stopBits = QSerialPort::StopBits(tmp);
+
+    tmp = m_settings->value("serialPortFlowControl").toInt();
+    config.m_flowControl =QSerialPort::FlowControl(tmp);
+
+    return config;
+}
+
+void Settings::setSerialPortConfig(const SerialPortConfig& config)
+{
+    m_settings->setValue("serialPortName", config.m_portName);
+    m_settings->setValue("serialPortAutoConnectPortName", config.m_autoConnectPortName);
+    m_settings->setValue("serialPortBaudRate", config.m_baudRate);
+    m_settings->setValue("serialPortDataBits", config.m_dataBits);
+    m_settings->setValue("serialPortParity", config.m_parity);
+    m_settings->setValue("serialPortStopBits", config.m_stopBits);
+    m_settings->setValue("serialPortFlowControl", config.m_flowControl);
 }

@@ -20,6 +20,14 @@ public:
     Application(int argc, char *argv[]);
     virtual ~Application();
 
+private slots:
+    void dataSourceChanged(QString dataSourceName);
+    void dataSourceStarted();
+    void dataSourceEnded();
+    void dataSourceFailed(QString errorMessage);
+    void dataSourceDataAvailable();
+    void update();
+
 private:
     MainWindow* m_mainWindow = nullptr;
     QTimer* m_timer = nullptr;
@@ -28,14 +36,8 @@ private:
 
     std::vector<std::unique_ptr<Calibrate>> m_calibrators;
 
-public slots:
-    void cleanup();
-
-private slots:
-    void dataSourceChanged(QString dataSourceName);
-    void dataSourceOpened();
-    void dataSourceClosed();
-    void dataSourceFailed(QString errorMessage);
-    void dataSourceDataAvailable();
-    void update();
+    void selectDataSource(const QString& value);
+    void removeCalibrateWidgets();
+    void removeDataSourceWidgets();
+    void addDataSourceWidget();
 };

@@ -23,6 +23,8 @@ public:
     static QString getName() { return "CSV File"; }
     bool getNextPoints(std::vector<std::set<Point>>& points) override;
     bool isStream() const override { return false; }
+    bool canSignalDataAvailable() const override { return false; }
+    QString getTypeName() const override { return "csv_file"; }
     QWidget* widget() const override;
 
 private slots:

@@ -37,14 +37,14 @@ void CSVFileDataSource::processFile(QString filePath)
 {
     if (m_csvFile.isOpen())
     {
-        emit closed();
+        emit dataSourceEnded();
         return;
     }
 
     m_csvFile.setFileName(filePath);
     if (m_csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        emit opened();
+        emit dataSourceStarted();
         return;
     }
 
@@ -69,7 +69,7 @@ bool CSVFileDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints
         gotData |= parseLineToDeviceData(line.toStdString(), devicePoints);
     }
 
-    emit closed();
+    emit dataSourceEnded();
     return gotData;
 }
 

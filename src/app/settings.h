@@ -3,12 +3,8 @@
 #include <memory>
 
 #include <QSettings>
-
-enum DataSourceType
-{
-    CSV_FILE = 0,
-    SERIAL_PORT = 1
-};
+#include <QString>
+#include <data/serialport_config.h>
 
 class Settings
 {
@@ -17,8 +13,14 @@ public:
     Settings();
     virtual ~Settings();
 
-    DataSourceType getDataSourceType() const;
-    void setDataSourceType(DataSourceType t);
+    QString getDataSourceType() const;
+    void setDataSourceType(const QString& dataSourceType);
+
+    QString getCSVFilePath() const;
+    void setCSVFilePath(const QString& filePath);
+
+    SerialPortConfig getSerialPortConfig() const;
+    void setSerialPortConfig(const SerialPortConfig& config);
 
 private:
     std::unique_ptr<QSettings> m_settings;

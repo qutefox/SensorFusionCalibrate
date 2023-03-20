@@ -14,10 +14,8 @@ Application::Application(int argc, char *argv[])
 {
     QComboBox* dataSourceComboBox = m_mainWindow->ui()->dataSourceComboBox;
 
-    dataSourceComboBox->addItems({
-        CSVFileDataSource::getName(),
-        SerialPortDataSource::getName()
-    });
+    dataSourceComboBox->addItem(CSVFileDataSource::getName(), "csv_file");
+    dataSourceComboBox->addItem(SerialPortDataSource::getName(), "serial");
 
     connect(
         dataSourceComboBox, &QComboBox::currentTextChanged,
@@ -29,15 +27,50 @@ Application::Application(int argc, char *argv[])
         this, &Application::update
     );
 
+    selectDataSource(m_settings.getDataSourceType());
+
     m_mainWindow->show();
 }
 
 Application::~Application()
 {
-    cleanup();
+    removeCalibrateWidgets();
+    removeDataSourceWidgets();
 }
 
-void Application::cleanup()
+void Application::removeDataSourceWidgets()
+{
+    QWidget* dataSourceWidget = m_mainWindow->ui()->dataSourceFrame;
+    QHBoxLayout* dataSourceLayout = qobject_cast<QHBoxLayout*>(dataSourceWidget->layout());
+    if (m_dataSource)
+    {
+        if (m_dataSource->getTypeName() == "csv_file")
+        {
+            auto w = qobject_cast<const CSVFileControlWidget*>(m_dataSource->widget());
+            m_settings.setCSVFilePath(w->getFilePath());
+        }
+        else if (m_dataSource->getTypeName() == "serial")
+        {
+            auto w = qobject_cast<const SerialPortControlWidget*>(m_dataSource->widget());
+            m_settings.setSerialPortConfig(w->getValues());
+        }
+
+        dataSourceLayout->removeWidget(m_dataSource->widget());
+        m_dataSource.reset();
+    }
+}
+
+void Application::addDataSourceWidget()
+{
+    QWidget* tabWidget = m_mainWindow->ui()->tabWidget->widget(0);
+    QVBoxLayout* tabLayout = qobject_cast<QVBoxLayout*>(tabWidget->layout());
+
+    m_calibrators.push_back(std::make_unique<Calibrate>(m_calibrators.size()+1, tabWidget));
+    QWidget* calibratorWidget = m_calibrators.back().get();
+    tabLayout->addWidget(calibratorWidget);
+}
+
+void Application::removeCalibrateWidgets()
 {
     QWidget* tabWidget = m_mainWindow->ui()->tabWidget->widget(0);
     QVBoxLayout* tabLayout = qobject_cast<QVBoxLayout*>(tabWidget->layout());
@@ -51,25 +84,28 @@ void Application::cleanup()
     m_calibrators.clear();
 }
 
+void Application::selectDataSource(const QString& value)
+{
+    QComboBox* dataSourceComboBox = m_mainWindow->ui()->dataSourceComboBox;
+    int index = dataSourceComboBox->findData(value);
+    if (index == -1) return;
+    dataSourceComboBox->setCurrentIndex(index);
+}
+
 void Application::dataSourceChanged(QString dataSourceName)
 {
     QWidget* dataSourceWidget = m_mainWindow->ui()->dataSourceFrame;
     QHBoxLayout* dataSourceLayout = qobject_cast<QHBoxLayout*>(dataSourceWidget->layout());
 
-    if (m_dataSource)
-    {
-        dataSourceLayout->removeWidget(m_dataSource->widget());
-    }
-
-    m_dataSource.reset();
+    removeDataSourceWidgets();
 
     if (dataSourceName == CSVFileDataSource::getName())
     {
-        m_dataSource = std::make_unique<CSVFileDataSource>("", dataSourceWidget);
+        m_dataSource = std::make_unique<CSVFileDataSource>(m_settings.getCSVFilePath(), dataSourceWidget);
     }
     else if (dataSourceName == SerialPortDataSource::getName())
     {
-        m_dataSource = std::make_unique<SerialPortDataSource>(SerialPortConfig(), dataSourceWidget);
+        m_dataSource = std::make_unique<SerialPortDataSource>(m_settings.getSerialPortConfig(), dataSourceWidget);
     }
 
     if (m_dataSource)
@@ -77,12 +113,12 @@ void Application::dataSourceChanged(QString dataSourceName)
         dataSourceLayout->addWidget(m_dataSource->widget());
 
         connect(
-            m_dataSource.get(), &IDataSource::opened,
-            this, &Application::dataSourceOpened
+            m_dataSource.get(), &IDataSource::dataSourceStarted,
+            this, &Application::dataSourceStarted
         );
         connect(
-            m_dataSource.get(), &IDataSource::closed,
-            this, &Application::dataSourceClosed
+            m_dataSource.get(), &IDataSource::dataSourceEnded,
+            this, &Application::dataSourceEnded
         );
         connect(
             m_dataSource.get(), &IDataSource::errorOccurred,
@@ -92,20 +128,30 @@ void Application::dataSourceChanged(QString dataSourceName)
             m_dataSource.get(), &IDataSource::dataAvailable,
             this, &Application::dataSourceDataAvailable
         );
+
+        QComboBox* dataSourceComboBox = m_mainWindow->ui()->dataSourceComboBox;
+        m_settings.setDataSourceType(dataSourceComboBox->currentData().toString());
     }
 }
 
-void Application::dataSourceOpened()
+void Application::dataSourceStarted()
 {
     if (!m_dataSource) return;
-    if (!m_dataSource->isStream()) m_timer->start(500);
-    else cleanup();
+
+    removeCalibrateWidgets();
+
+    if (m_dataSource->isStream() && !m_dataSource->canSignalDataAvailable())
+    {
+        // Start an update timer and periodically read the buffered stream data.
+        m_timer->start(500);
+    }
+
+    update();
 }
 
-void Application::dataSourceClosed()
+void Application::dataSourceEnded()
 {
-    if (!m_dataSource) return;
-    if (!m_dataSource->isStream()) m_timer->stop();
+    m_timer->stop();
 }
 
 void Application::dataSourceFailed(QString errorMessage)
@@ -129,13 +175,7 @@ void Application::update()
     while(deviceCount > m_calibrators.size())
     {
         // Need to add more calibrator instance.
-
-        QWidget* tabWidget = m_mainWindow->ui()->tabWidget->widget(0);
-        QVBoxLayout* tabLayout = qobject_cast<QVBoxLayout*>(tabWidget->layout());
-
-        m_calibrators.push_back(std::make_unique<Calibrate>(m_calibrators.size()+1, tabWidget));
-        QWidget* calibratorWidget = m_calibrators.back().get();
-        tabLayout->addWidget(calibratorWidget);
+        addDataSourceWidget();
     }
 
     for (std::size_t i = 0 ; i < deviceCount ; ++i)
