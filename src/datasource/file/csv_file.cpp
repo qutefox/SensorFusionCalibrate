@@ -9,9 +9,9 @@
 
 #include <datasource/line_parser.h>
 
-CSVFileDataSource::CSVFileDataSource(const QString& filePath, QObject* parent)
+CSVFileDataSource::CSVFileDataSource(const CSVFileConfig& config, QObject* parent)
     : IDataSource{ parent }
-    , m_widget{ new CSVFileControlWidget(filePath) }
+    , m_widget{ new CSVFileControlWidget(config) }
 {
     connect(
         m_widget, &CSVFileControlWidget::processFile,

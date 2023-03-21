@@ -3,7 +3,7 @@
 
 #include <QFileDialog>
 
-CSVFileControlWidget::CSVFileControlWidget(const QString& filePath, QWidget *parent)
+CSVFileControlWidget::CSVFileControlWidget(const CSVFileConfig& config, QWidget *parent)
     : QWidget(parent)
     , m_ui{ new Ui::CSVFileControlWidget }
 {
@@ -24,7 +24,8 @@ CSVFileControlWidget::CSVFileControlWidget(const QString& filePath, QWidget *par
         this, &CSVFileControlWidget::processSlot
     );
 
-    setFilePath(filePath);
+    setFilePath(config.m_filePath);
+    setBrowseDirectoryPath(config.m_browseDirectoryPath);
 }
 
 CSVFileControlWidget::~CSVFileControlWidget()
@@ -40,6 +41,28 @@ void CSVFileControlWidget::setFilePath(const QString& filePath)
 QString CSVFileControlWidget::getFilePath() const
 {
     return m_ui->filePathLineEdit->text();
+}
+
+void CSVFileControlWidget::setBrowseDirectoryPath(const QString& dirPath)
+{
+    QFileInfo checkDir(dirPath);
+    if (checkDir.exists()  && checkDir.isDir())
+    {
+        m_browseDirectoryPath = dirPath;
+    }
+}
+
+QString CSVFileControlWidget::getBrowseDirectoryPath() const
+{
+    return m_browseDirectoryPath;
+}
+
+CSVFileConfig CSVFileControlWidget::getValues() const
+{
+    return CSVFileConfig(
+        getFilePath(),
+        getBrowseDirectoryPath()
+    );
 }
 
 void CSVFileControlWidget::filePathChangedSlot(QString newPath)
@@ -63,14 +86,24 @@ void CSVFileControlWidget::openFileDialog()
     QString filters("CSV files (*.csv);;All files (*.*)");
     QString defaultFilter("CSV files (*.csv)");
 
+    QString dirPath = getBrowseDirectoryPath();
+    QFileInfo checkDir(dirPath);
+    if (!checkDir.exists() || !checkDir.isDir())
+    {
+        dirPath = QDir::currentPath();
+    }
+
     QString filePath = QFileDialog::getOpenFileName(
         this,
         "Open CSV File",
-        QDir::currentPath(),
+        dirPath,
         filters, &defaultFilter
     );
 
     setFilePath(filePath);
+
+    QDir dir = QFileInfo(filePath).absoluteDir();
+    setBrowseDirectoryPath(dir.absolutePath());
 }
 
 void CSVFileControlWidget::processSlot()

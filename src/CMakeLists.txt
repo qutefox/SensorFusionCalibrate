@@ -44,6 +44,8 @@ set(PROJECT_SOURCES
         data/point.cpp
         data/calibration_result.h
         data/calibration_result.cpp
+        data/csv_file_config.h
+        data/csv_file_config.cpp
         data/serialport_config.h
         data/serialport_config.cpp
         data/serialport_id_match.h

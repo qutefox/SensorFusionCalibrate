@@ -9,6 +9,7 @@
 #include <QToolButton>
 #include <QTimer>
 
+#include <data/serialport_config.h>
 #include <datasource/data_source_interface.h>
 #include <widget/serialport_control.h>
 

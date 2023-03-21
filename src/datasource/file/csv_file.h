@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QToolButton>
 
+#include <data/csv_file_config.h>
 #include <datasource/data_source_interface.h>
 #include <widget/csv_file_control.h>
 
@@ -17,7 +18,7 @@ class CSVFileDataSource : public IDataSource
     Q_OBJECT
 
 public:
-    CSVFileDataSource(const QString& filePath, QObject* parent = nullptr);
+    CSVFileDataSource(const CSVFileConfig& config, QObject* parent = nullptr);
     virtual ~CSVFileDataSource();
 
     static QString getName() { return "CSV File"; }

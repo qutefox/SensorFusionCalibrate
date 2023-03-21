@@ -47,7 +47,7 @@ void Application::removeDataSourceWidgets()
         if (m_dataSource->getTypeName() == "csv_file")
         {
             auto w = qobject_cast<const CSVFileControlWidget*>(m_dataSource->widget());
-            m_settings.setCSVFilePath(w->getFilePath());
+            m_settings.setCSVFileConfig(w->getValues());
         }
         else if (m_dataSource->getTypeName() == "serial")
         {
@@ -101,7 +101,7 @@ void Application::dataSourceChanged(QString dataSourceName)
 
     if (dataSourceName == CSVFileDataSource::getName())
     {
-        m_dataSource = std::make_unique<CSVFileDataSource>(m_settings.getCSVFilePath(), dataSourceWidget);
+        m_dataSource = std::make_unique<CSVFileDataSource>(m_settings.getCSVFileConfig(), dataSourceWidget);
     }
     else if (dataSourceName == SerialPortDataSource::getName())
     {

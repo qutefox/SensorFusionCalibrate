@@ -1,8 +1,12 @@
 #include "settings.h"
 
+#include <QStandardPaths>
+
 Settings::Settings()
 {
-    m_settings = std::make_unique<QSettings>(QSettings::SystemScope, "SensorFusionCalibrate");
+    QString configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QString iniFileName = "settings.ini";
+    m_settings = std::make_unique<QSettings>(configPath+"/"+iniFileName, QSettings::IniFormat);
 }
 
 Settings::~Settings()
@@ -12,7 +16,7 @@ Settings::~Settings()
 
 QString Settings::getDataSourceType() const
 {
-    QString tmp = m_settings->value("dataSourceType").toString();
+    QString tmp = m_settings->value("dataSourceType", QVariant("")).toString();
     if (tmp == "csv_file" || tmp == "serial") return tmp;
     return "";
 }
@@ -26,34 +30,38 @@ void Settings::setDataSourceType(const QString& dataSourceType)
     else m_settings->setValue("dataSourceType", "");
 }
 
-QString Settings::getCSVFilePath() const
+CSVFileConfig Settings::getCSVFileConfig() const
 {
-    return m_settings->value("csvFilePath").toString();
+    CSVFileConfig config;
+    config.m_filePath = m_settings->value("csvFilePath", QVariant(config.m_filePath)).toString();
+    config.m_browseDirectoryPath = m_settings->value("csvFileBrowseDirectoryPath", QVariant(config.m_browseDirectoryPath)).toString();
+    return config;
 }
 
-void Settings::setCSVFilePath(const QString& filePath)
+void Settings::setCSVFileConfig(const CSVFileConfig& config)
 {
-    m_settings->setValue("csvFilePath", filePath);
+    m_settings->setValue("csvFilePath", config.m_filePath);
+    m_settings->setValue("csvFileBrowseDirectoryPath", config.m_browseDirectoryPath);
 }
 
 SerialPortConfig Settings::getSerialPortConfig() const
 {
     SerialPortConfig config;
-    int tmp;
-    config.m_portName = m_settings->value("serialPortName").toString();
-    config.m_autoConnectPortName = m_settings->value("serialPortAutoConnectPortName").toString();
-    config.m_baudRate = m_settings->value("serialPortBaudRate").toUInt();
 
-    tmp = m_settings->value("serialPortDataBits").toInt();
+    config.m_portName = m_settings->value("serialPortName", QVariant("")).toString();
+    config.m_autoConnectPortName = m_settings->value("serialPortAutoConnectPortName", QVariant("")).toString();
+    config.m_baudRate = m_settings->value("serialPortBaudRate", QVariant(config.m_baudRate)).toUInt();
+
+    int tmp = m_settings->value("serialPortDataBits", QVariant(config.m_dataBits)).toInt();
     config.m_dataBits = QSerialPort::DataBits(tmp);
 
-    tmp = m_settings->value("serialPortParity").toInt();
+    tmp = m_settings->value("serialPortParity", QVariant(config.m_parity)).toInt();
     config.m_parity = QSerialPort::Parity(tmp);
 
-    tmp = m_settings->value("serialPortStopBits").toInt();
+    tmp = m_settings->value("serialPortStopBits", QVariant(config.m_stopBits)).toInt();
     config.m_stopBits = QSerialPort::StopBits(tmp);
 
-    tmp = m_settings->value("serialPortFlowControl").toInt();
+    tmp = m_settings->value("serialPortFlowControl", QVariant(config.m_flowControl)).toInt();
     config.m_flowControl =QSerialPort::FlowControl(tmp);
 
     return config;

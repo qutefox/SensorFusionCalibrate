@@ -2,9 +2,11 @@
 
 #include <memory>
 
-#include <QSettings>
 #include <QString>
+#include <QSettings>
+
 #include <data/serialport_config.h>
+#include <data/csv_file_config.h>
 
 class Settings
 {
@@ -16,8 +18,8 @@ public:
     QString getDataSourceType() const;
     void setDataSourceType(const QString& dataSourceType);
 
-    QString getCSVFilePath() const;
-    void setCSVFilePath(const QString& filePath);
+    CSVFileConfig getCSVFileConfig() const;
+    void setCSVFileConfig(const CSVFileConfig& config);
 
     SerialPortConfig getSerialPortConfig() const;
     void setSerialPortConfig(const SerialPortConfig& config);
