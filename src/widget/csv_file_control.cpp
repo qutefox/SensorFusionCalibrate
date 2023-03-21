@@ -100,6 +100,8 @@ void CSVFileControlWidget::openFileDialog()
         filters, &defaultFilter
     );
 
+    if (filePath.isEmpty()) return;
+
     setFilePath(filePath);
 
     QDir dir = QFileInfo(filePath).absoluteDir();

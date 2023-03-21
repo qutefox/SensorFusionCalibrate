@@ -244,7 +244,7 @@ QString SerialPortControlWidget::generateSerialPortDetail(const QSerialPortInfo&
 
         if (!match.m_vendorName.empty())
         {
-            out += QString(", ") + QString::fromStdString(match.m_vendorName);
+            out += QString(", '") + QString::fromStdString(match.m_vendorName) + QString("'");
             hasData = true;
         }
 
@@ -253,18 +253,22 @@ QString SerialPortControlWidget::generateSerialPortDetail(const QSerialPortInfo&
             out += QString(", ") + QString::fromStdString(match.m_productName);
             hasData = true;
         }
+        else if(hasData && serialPort.hasProductIdentifier())
+        {
+            out += QString(", product Id: 0x%1").arg(serialPort.productIdentifier(), 4, 16, QLatin1Char('0'));
+        }
 
         if (hasData) return out;
     }
 
     if(serialPort.hasVendorIdentifier())
     {
-        out += QString(", vId: 0x%1").arg(serialPort.vendorIdentifier(), 4, 16, QLatin1Char('0'));
+        out += QString(", vendor Id: 0x%1").arg(serialPort.vendorIdentifier(), 4, 16, QLatin1Char('0'));
     }
 
     if(serialPort.hasProductIdentifier())
     {
-        out += QString(", pId: 0x%1").arg(serialPort.productIdentifier(), 4, 16, QLatin1Char('0'));
+        out += QString(", product Id: 0x%1").arg(serialPort.productIdentifier(), 4, 16, QLatin1Char('0'));
     }
 
     return out;
