@@ -251,7 +251,7 @@ QString SerialPortControlWidget::generateSerialPortDetail(const QSerialPortInfo&
 
         if (!match.m_productName.empty())
         {
-            out += QString(", ") + QString::fromStdString(match.m_productName);
+            out += QString(", '") + QString::fromStdString(match.m_productName) + QString("'");
             hasData = true;
         }
         else if(hasData && serialPort.hasProductIdentifier())
@@ -294,7 +294,6 @@ QString SerialPortControlWidget::generateSerialPortId(const QSerialPortInfo& ser
 
 bool SerialPortControlWidget::canAutoConnect(QString& portName)
 {
-    qDebug() << "canAutoConnect?: " << m_autoconnectPortId;
     QString portId;
     for (int i = 0 ; i < m_ui->serialComboBox->count() ; ++i)
     {
@@ -302,8 +301,6 @@ bool SerialPortControlWidget::canAutoConnect(QString& portName)
         if (portName == "") continue;
 
         portId = generateSerialPortId(QSerialPortInfo(portName));
-        qDebug() << "portName: " << portName << "portId: " << portId;
-
         if (portId == m_autoconnectPortId) return true;
     }
     portName.clear();

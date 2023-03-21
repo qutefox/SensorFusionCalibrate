@@ -51,6 +51,9 @@ set(PROJECT_SOURCES
         data/serialport_id_match.h
         data/serialport_id_match.cpp
 
+        terminal/ansi/ansi.h
+        terminal/ansi/ansi.cpp
+
         datasource/line_parser.h
         datasource/line_parser.cpp
         datasource/data_source_interface.h
@@ -58,10 +61,10 @@ set(PROJECT_SOURCES
         datasource/file/csv_file.h
         datasource/file/csv_file.cpp
 
-        datasource/serial/serialport.h
-        datasource/serial/serialport.cpp
         datasource/serial/id_matcher.h
         datasource/serial/id_matcher.cpp
+        datasource/serial/serialport.h
+        datasource/serial/serialport.cpp
 
         app/application.h
         app/application.cpp
