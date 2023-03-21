@@ -64,13 +64,14 @@ private:
     QTimer* m_updateTimer = nullptr;
     Ui::SerialPortControlWidget* m_ui = nullptr;
     unsigned int m_updateMilliseconds = 3000;
-    QString m_autoconnectPort;
+    QString m_autoconnectPortId;
 
     void setupDropdownValues();
     void setupSignalSlot();
     QString generateSerialPortDetail(const QSerialPortInfo& serialPort);
+    QString generateSerialPortId(const QSerialPortInfo& serialPort);
     bool isPortListContainsPort(const QList<QSerialPortInfo>& serialPorts, const QString& portName);
-    bool canAutoConnect();
+    bool canAutoConnect(QString& portName);
     void changeToDisconnectToolButton();
     void changeToConnectToolButton();
 

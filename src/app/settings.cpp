@@ -49,7 +49,7 @@ SerialPortConfig Settings::getSerialPortConfig() const
     SerialPortConfig config;
 
     config.m_portName = m_settings->value("serialPortName", QVariant("")).toString();
-    config.m_autoConnectPortName = m_settings->value("serialPortAutoConnectPortName", QVariant("")).toString();
+    config.m_autoConnectPortId = m_settings->value("serialPortAutoConnectPortName", QVariant("")).toString();
     config.m_baudRate = m_settings->value("serialPortBaudRate", QVariant(config.m_baudRate)).toUInt();
 
     int tmp = m_settings->value("serialPortDataBits", QVariant(config.m_dataBits)).toInt();
@@ -70,7 +70,7 @@ SerialPortConfig Settings::getSerialPortConfig() const
 void Settings::setSerialPortConfig(const SerialPortConfig& config)
 {
     m_settings->setValue("serialPortName", config.m_portName);
-    m_settings->setValue("serialPortAutoConnectPortName", config.m_autoConnectPortName);
+    m_settings->setValue("serialPortAutoConnectPortName", config.m_autoConnectPortId);
     m_settings->setValue("serialPortBaudRate", config.m_baudRate);
     m_settings->setValue("serialPortDataBits", config.m_dataBits);
     m_settings->setValue("serialPortParity", config.m_parity);

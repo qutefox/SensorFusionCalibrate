@@ -141,6 +141,7 @@ void SerialPortControlWidget::setValues(const SerialPortConfig& config)
     setParity(config.m_parity);
     setStopBits(config.m_stopBits);
     setFlowControl(config.m_flowControl);
+    m_autoconnectPortId = config.m_autoConnectPortId;
 }
 
 void SerialPortControlWidget::setPortListUpdateMilliseconds(unsigned int milliseconds)
@@ -187,7 +188,7 @@ SerialPortConfig SerialPortControlWidget::getValues() const
 {
     return SerialPortConfig(
         getPort(),
-        m_autoconnectPort,
+        m_autoconnectPortId,
         getBaudRate(),
         getDataBits(),
         getParity(),
@@ -274,15 +275,38 @@ QString SerialPortControlWidget::generateSerialPortDetail(const QSerialPortInfo&
     return out;
 }
 
-bool SerialPortControlWidget::canAutoConnect()
+QString SerialPortControlWidget::generateSerialPortId(const QSerialPortInfo& serialPort)
 {
-    QString itemData;
+    QString out;
+
+    if(serialPort.hasVendorIdentifier())
+    {
+        out += QString("0x%1").arg(serialPort.vendorIdentifier(), 4, 16, QLatin1Char('0'));
+    }
+
+    if(serialPort.hasProductIdentifier())
+    {
+        out += QString("0x%1").arg(serialPort.productIdentifier(), 4, 16, QLatin1Char('0'));
+    }
+
+    return out;
+}
+
+bool SerialPortControlWidget::canAutoConnect(QString& portName)
+{
+    qDebug() << "canAutoConnect?: " << m_autoconnectPortId;
+    QString portId;
     for (int i = 0 ; i < m_ui->serialComboBox->count() ; ++i)
     {
-        itemData = m_ui->serialComboBox->itemData(i).toString();
-        if (itemData == "") continue;
-        if (itemData == m_autoconnectPort) return true;
+        portName = m_ui->serialComboBox->itemData(i).toString();
+        if (portName == "") continue;
+
+        portId = generateSerialPortId(QSerialPortInfo(portName));
+        qDebug() << "portName: " << portName << "portId: " << portId;
+
+        if (portId == m_autoconnectPortId) return true;
     }
+    portName.clear();
     return false;
 }
 
@@ -329,9 +353,10 @@ void SerialPortControlWidget::updatePortListSlot()
 
     QString afterPort = getPort();
 
-    if (afterPort.isEmpty() && canAutoConnect())
+    QString autoConnectPortName;
+    if (afterPort.isEmpty() && canAutoConnect(autoConnectPortName))
     {
-        setPort(m_autoconnectPort);
+        setPort(autoConnectPortName);
         emit handlePort(getValues());
         return;
     }
@@ -351,7 +376,7 @@ void SerialPortControlWidget::processReleasedSlot()
 void SerialPortControlWidget::deviceConnected()
 {
     m_ui->autoConnectCheckBox->show();
-    if (!m_autoconnectPort.isEmpty() && m_autoconnectPort == getPort())
+    if (!m_autoconnectPortId.isEmpty() && m_autoconnectPortId == generateSerialPortId(QSerialPortInfo(getPort())))
     {
         m_ui->autoConnectCheckBox->setCheckState(Qt::CheckState::Checked);
     }
@@ -370,8 +395,14 @@ void SerialPortControlWidget::deviceDisconnected()
 
 void SerialPortControlWidget::autoConnectChangedSlot(bool checked)
 {
-    if (checked) m_autoconnectPort = getPort();
-    else m_autoconnectPort.clear();
+    if (checked)
+    {
+        m_autoconnectPortId = generateSerialPortId(QSerialPortInfo(getPort()));
+    }
+    else
+    {
+        m_autoconnectPortId.clear();
+    }
 }
 
 void SerialPortControlWidget::showEvent(QShowEvent* event)

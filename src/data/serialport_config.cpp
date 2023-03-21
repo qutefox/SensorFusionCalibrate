@@ -2,7 +2,7 @@
 
 SerialPortConfig::SerialPortConfig()
     : m_portName{ "" }
-    , m_autoConnectPortName{ "" }
+    , m_autoConnectPortId{ "" }
     , m_baudRate{ 115200 }
     , m_dataBits{ QSerialPort::DataBits::Data8 }
     , m_parity{ QSerialPort::Parity::NoParity }
@@ -12,11 +12,11 @@ SerialPortConfig::SerialPortConfig()
 
 }
 
-SerialPortConfig::SerialPortConfig(const QString& portName, const QString& autoConnectPortName,
+SerialPortConfig::SerialPortConfig(const QString& portName, const QString& autoConnectPortId,
     unsigned int baudRate, QSerialPort::DataBits dataBits, QSerialPort::Parity parity,
     QSerialPort::StopBits stopBits, QSerialPort::FlowControl flowControl)
     : m_portName{ portName }
-    , m_autoConnectPortName{ autoConnectPortName }
+    , m_autoConnectPortId{ autoConnectPortId }
     , m_baudRate{ baudRate }
     , m_dataBits{ dataBits }
     , m_parity{ parity }
@@ -29,7 +29,7 @@ SerialPortConfig::SerialPortConfig(const QString& portName, const QString& autoC
 void SerialPortConfig::resetToDefault()
 {
     m_portName.clear();
-    m_autoConnectPortName.clear();
+    m_autoConnectPortId.clear();
     m_baudRate = 115200;
     m_dataBits = QSerialPort::DataBits::Data8;
     m_parity = QSerialPort::Parity::NoParity;
