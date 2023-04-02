@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QTimer>
 
-#include <data/serialport_config.h>
+#include <datasource/serial/serialport_config.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SerialPortControlWidget; }

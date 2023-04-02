@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-#include <data/csv_file_config.h>
+#include <datasource/file/csv_file_config.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class CSVFileControlWidget; }

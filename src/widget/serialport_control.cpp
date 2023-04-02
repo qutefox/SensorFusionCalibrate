@@ -3,7 +3,7 @@
 
 #include <QSerialPortInfo>
 
-#include <datasource/serial/id_matcher.h>
+#include <datasource/serial/serialport_id_matcher.h>
 
 SerialPortControlWidget::SerialPortControlWidget(const SerialPortConfig& config, QWidget *parent)
     : QWidget(parent)

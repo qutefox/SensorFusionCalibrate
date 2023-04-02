@@ -5,8 +5,8 @@
 #include <QString>
 #include <QSettings>
 
-#include <data/serialport_config.h>
-#include <data/csv_file_config.h>
+#include <datasource/serial/serialport_config.h>
+#include <datasource/file/csv_file_config.h>
 
 class Settings
 {

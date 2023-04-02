@@ -44,13 +44,14 @@ set(PROJECT_SOURCES
         data/point.cpp
         data/calibration_result.h
         data/calibration_result.cpp
-        data/csv_file_config.h
-        data/csv_file_config.cpp
-        data/serialport_config.h
-        data/serialport_config.cpp
-        data/serialport_id_match.h
-        data/serialport_id_match.cpp
 
+        terminal/ansi/ansi_color.h
+        terminal/ansi/ansi_color.cpp
+        terminal/ansi/ansi_enums.h
+        terminal/ansi/ansi_enums.cpp
+        terminal/ansi/ansi_classes.h
+        terminal/ansi/ansi_classes.cpp
+        terminal/ansi/ansi_handler_interface.h
         terminal/ansi/ansi.h
         terminal/ansi/ansi.cpp
 
@@ -58,11 +59,17 @@ set(PROJECT_SOURCES
         datasource/line_parser.cpp
         datasource/data_source_interface.h
 
+        datasource/file/csv_file_config.h
+        datasource/file/csv_file_config.cpp
         datasource/file/csv_file.h
         datasource/file/csv_file.cpp
 
-        datasource/serial/id_matcher.h
-        datasource/serial/id_matcher.cpp
+        datasource/serial/serialport_config.h
+        datasource/serial/serialport_config.cpp
+        datasource/serial/serialport_id_match.h
+        datasource/serial/serialport_id_match.cpp
+        datasource/serial/serialport_id_matcher.h
+        datasource/serial/serialport_id_matcher.cpp
         datasource/serial/serialport.h
         datasource/serial/serialport.cpp
 

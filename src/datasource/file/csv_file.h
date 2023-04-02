@@ -9,8 +9,8 @@
 #include <QLineEdit>
 #include <QToolButton>
 
-#include <data/csv_file_config.h>
 #include <datasource/data_source_interface.h>
+#include <datasource/file/csv_file_config.h>
 #include <widget/csv_file_control.h>
 
 class CSVFileDataSource : public IDataSource

@@ -4,119 +4,7 @@
 #include <cmath>
 #include <cctype>
 
-std::shared_ptr<QColor> parseColorParts(const std::string& r, const std::string& g, const std::string& b)
-{
-    if (r.empty() || r.size() != g.size() || r.size() != b.size()) return nullptr;
 
-    std::size_t maxValue = std::pow(16, r.size()) - 1;
-
-    unsigned int rValue = std::stoi(r, 0, 16);
-    uint8_t rInt = 255 * rValue / maxValue;
-
-    unsigned int gValue = std::stoi(g, 0, 16);
-    uint8_t gInt = 255 * gValue / maxValue;
-
-    unsigned int bValue = std::stoi(b, 0, 16);
-    uint8_t bInt = 255 * bValue / maxValue;
-
-    return std::make_shared<QColor>(rInt, gInt, bInt);
-}
-
-std::shared_ptr<QColor> parseLegacyColor(const std::vector<char>& in, std::size_t offset)
-{
-    // Parse colors in '#r(rrr)g(ggg)b(bbb)' format.
-    std::vector<char> color;
-    color.reserve(12);
-    for ( ; offset < in.size() ; ++offset)
-    {
-        const char c = in[offset];
-        if (std::isxdigit(c) && color.size() < 12)
-        {
-            color.push_back(c);
-        }
-        else break;
-    }
-    unsigned short itemLength = color.size() / 3;
-    if (itemLength * 3 != color.size()) return nullptr;
-
-    return parseColorParts(
-        std::string(color.data(), itemLength),
-        std::string(&color[itemLength], itemLength),
-        std::string(&color[itemLength*2], itemLength)
-    );
-}
-
-std::shared_ptr<QColor> parseRgbColor(const std::vector<char>& in, std::size_t offset)
-{
-    // Parse colors in 'rgb:r(rrr)/g(ggg)/b(bbb)' format.
-    std::vector<char> r, g, b;
-    r.reserve(4);
-    g.reserve(4);
-    b.reserve(4);
-    unsigned short characterCountPerColor = 0;
-    bool characterCountDecided = false;
-    unsigned short characterIndex = 0;
-    char color = 'r';
-    for ( ; offset < in.size() ; ++offset)
-    {
-        const char c = in[offset];
-        if (c == '/')
-        {
-            if (!characterCountDecided)
-            {
-                if (characterIndex > 4)
-                {
-                    // Maximum 4 characters are allowed.
-                    return nullptr;
-                }
-                characterCountPerColor = characterIndex;
-                characterCountDecided = true;
-            }
-            if (color == 'r') color = 'g';
-            else if (color == 'g') color = 'b';
-            else break;
-            characterIndex = 0;
-        }
-        else if (characterCountDecided && characterIndex > characterCountPerColor)
-        {
-            if (color == 'b') break; // End of input.
-
-            // All color parts must have the same length!
-            return nullptr;
-        }
-        else
-        {
-            if (color == 'r') r.push_back(c);
-            else if (color == 'g') g.push_back(c);
-            else if (color == 'b') b.push_back(c);
-            ++characterIndex;
-        }
-    }
-
-    return parseColorParts(
-        std::string(r.data(), r.size()),
-        std::string(g.data(), g.size()),
-        std::string(b.data(), b.size())
-    );
-}
-
-std::shared_ptr<QColor> Ansi::xParseColor(const std::string& in)
-{
-    return xParseColor(std::vector<char>(in.begin(), in.end()));
-}
-
-std::shared_ptr<QColor> Ansi::xParseColor(const std::vector<char>& in)
-{
-    if (!in.empty() && in[0] == '#')
-    {
-        return parseLegacyColor(in, 1);
-    }
-    else if (in.size() >= 4 && std::string(in.data(), 4) == "rgb:")
-    {
-        return parseRgbColor(in, 4);
-    }
-    return nullptr;
-}
 
 std::shared_ptr<Ansi::Mode> Ansi::getMode(const char intermediate, const uint16_t num)
 {
@@ -152,3 +40,98 @@ std::shared_ptr<Ansi::Mode> Ansi::getMode(const char intermediate, const uint16_
     }
     return nullptr;
 }
+
+Ansi::NamedColor Ansi::NamedColorToBright(NamedColor namedColor)
+{
+    switch(namedColor)
+    {
+    case NamedColor_Foreground: return NamedColor_BrightForeground;
+    case NamedColor_Black: return NamedColor_BrightBlack;
+    case NamedColor_Red: return NamedColor_BrightRed;
+    case NamedColor_Green: return NamedColor_BrightGreen;
+    case NamedColor_Yellow: return NamedColor_BrightYellow;
+    case NamedColor_Blue: return NamedColor_BrightBlue;
+    case NamedColor_Magenta: return NamedColor_BrightMagenta;
+    case NamedColor_Cyan: return NamedColor_BrightCyan;
+    case NamedColor_White: return NamedColor_BrightWhite;
+    case NamedColor_DimForeground: return NamedColor_Foreground;
+    case NamedColor_DimBlack: return NamedColor_Black;
+    case NamedColor_DimRed: return NamedColor_Red;
+    case NamedColor_DimGreen: return NamedColor_Green;
+    case NamedColor_DimYellow: return NamedColor_Yellow;
+    case NamedColor_DimBlue: return NamedColor_Blue;
+    case NamedColor_DimMagenta: return NamedColor_Magenta;
+    case NamedColor_DimCyan: return NamedColor_Cyan;
+    case NamedColor_DimWhite: return NamedColor_White;
+    default: return namedColor;
+    }
+}
+Ansi::NamedColor Ansi::NamedColorToDim(NamedColor namedColor)
+{
+    switch(namedColor)
+    {
+    case NamedColor_Black: return NamedColor_DimBlack;
+    case NamedColor_Red: return NamedColor_DimRed;
+    case NamedColor_Green: return NamedColor_DimGreen;
+    case NamedColor_Yellow: return NamedColor_DimYellow;
+    case NamedColor_Blue: return NamedColor_DimBlue;
+    case NamedColor_Magenta: return NamedColor_DimMagenta;
+    case NamedColor_Cyan: return NamedColor_DimCyan;
+    case NamedColor_White: return NamedColor_DimWhite;
+    case NamedColor_Foreground: return NamedColor_DimForeground;
+    case NamedColor_BrightBlack: return NamedColor_Black;
+    case NamedColor_BrightRed: return NamedColor_Red;
+    case NamedColor_BrightGreen: return NamedColor_Green;
+    case NamedColor_BrightYellow: return NamedColor_Yellow;
+    case NamedColor_BrightBlue: return NamedColor_Blue;
+    case NamedColor_BrightMagenta: return NamedColor_Magenta;
+    case NamedColor_BrightCyan: return NamedColor_Cyan;
+    case NamedColor_BrightWhite: return NamedColor_White;
+    case NamedColor_BrightForeground: return NamedColor_Foreground;
+    default: return namedColor;
+    }
+}
+
+char Ansi::mapCharset(StandardCharset charset, char c)
+{
+    if (charset == StandardCharset_Ascii) return c;
+    switch (c) {
+    /*
+    case '_': return ' ';
+    case '`': return '◆';
+    case 'a': return '▒';
+    case 'b': return '\u{2409}'; // Symbol for horizontal tabulation
+    case 'c': return '\u{240c}'; // Symbol for form feed
+    case 'd': return '\u{240d}'; // Symbol for carriage return
+    case 'e': return '\u{240a}'; // Symbol for line feed
+    case 'f': return '°';
+    case 'g': return '±';
+    case 'h': return '\u{2424}'; // Symbol for newline
+    case 'i': return '\u{240b}'; // Symbol for vertical tabulation
+    case 'j': return '┘';
+    case 'k': return '┐';
+    case 'l': return '┌';
+    case 'm': return '└';
+    case 'n': return '┼';
+    case 'o': return '⎺';
+    case 'p': return '⎻';
+    case 'q': return '─';
+    case 'r': return '⎼';
+    case 's': return '⎽';
+    case 't': return '├';
+    case 'u': return '┤';
+    case 'v': return '┴';
+    case 'w': return '┬';
+    case 'x': return '│';
+    case 'y': return '≤';
+    case 'z': return '≥';
+    case '{': return 'π';
+    case '|': return '≠';
+    case '}': return '£';
+    case '~': return '·';
+*/
+    default:
+        return c;
+    }
+}
+

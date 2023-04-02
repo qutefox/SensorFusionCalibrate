@@ -9,8 +9,8 @@
 #include <QToolButton>
 #include <QTimer>
 
-#include <data/serialport_config.h>
 #include <datasource/data_source_interface.h>
+#include <datasource/serial/serialport_config.h>
 #include <widget/serialport_control.h>
 
 class SerialPortDataSource : public IDataSource
