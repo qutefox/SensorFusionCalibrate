@@ -45,15 +45,23 @@ set(PROJECT_SOURCES
         data/calibration_result.h
         data/calibration_result.cpp
 
-        terminal/ansi/ansi_color.h
-        terminal/ansi/ansi_color.cpp
-        terminal/ansi/ansi_enums.h
-        terminal/ansi/ansi_enums.cpp
-        terminal/ansi/ansi_classes.h
-        terminal/ansi/ansi_classes.cpp
-        terminal/ansi/ansi_handler_interface.h
-        terminal/ansi/ansi.h
-        terminal/ansi/ansi.cpp
+        virtual_terminal_emulator/parser/parser_enums.h
+        virtual_terminal_emulator/parser/sequence_argument.h
+        virtual_terminal_emulator/parser/sequence_argument.cpp
+        virtual_terminal_emulator/parser/parser_sequence.h
+        virtual_terminal_emulator/parser/parser_sequence.cpp
+        virtual_terminal_emulator/parser/parser.h
+        virtual_terminal_emulator/parser/parser.cpp
+
+        #terminal/ansi/ansi_color.h
+        #terminal/ansi/ansi_color.cpp
+        #terminal/ansi/ansi_enums.h
+        #terminal/ansi/ansi_enums.cpp
+        #terminal/ansi/ansi_classes.h
+        #terminal/ansi/ansi_classes.cpp
+        #terminal/ansi/ansi_handler_interface.h
+        #terminal/ansi/ansi.h
+        #terminal/ansi/ansi.cpp
 
         datasource/line_parser.h
         datasource/line_parser.cpp
