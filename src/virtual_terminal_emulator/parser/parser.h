@@ -3,72 +3,89 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <string>
 
-#include "parser_sequence.h"
-#include "parser_enums.h"
+#include <gsl/span>
+#include <gsl/span_ext>
 
-namespace VTE
+#include <libunicode/convert.h>
+#include <libunicode/scan.h>
+
+#include "parser_state.h"
+#include "parser_action.h"
+#include "interface_parser_events.h"
+
+namespace vte::parser
 {
-namespace Parser
-{
 
+    /**
+    * Terminal Parser.
+    *
+    * Highly inspired by: https://vt100.net/emu/dec_ansi_parser
+    */
+    class Parser
+    {
+    public:
+        using ParseError = std::function<void(std::string const&)>;
+        using iterator = uint8_t const*;
 
-class Parser : public std::enable_shared_from_this<Parser>
-{
-    Sequence m_seq;
-    StateEnum m_state = StateEnum::GROUND;
-    bool m_dispatchUnripe = false;
+        Parser(std::shared_ptr<IParserEvents> eventListener)
+            : m_eventListener{ eventListener }
+        { }
 
-public:
-    Parser();
-    virtual ~Parser();
+        /*
+        * Parses the input string in UTF-8 encoding and emits VT events while processing.
+        * With respect to text, only up to @c EventListener::maxBulkTextSequenceWidth() UTF-32 codepoints will
+        * be processed.
+        * */
+        void parseFragment(gsl::span<char const> data);
 
-    void reset();
+        [[nodiscard]] State state() const noexcept { return m_state; }
 
-    SeqEnum feed(uint32_t raw);
-    void setDispatchUnripe(bool enable);
-    void ignoreUntilStringTerminated();
+        [[nodiscard]] char32_t precedingGraphicCharacter() const noexcept { return m_scanState.lastCodepointHint; }
 
-private:
-    SeqEnum doNop(uint32_t raw);
-    SeqEnum doAction(uint32_t raw, ActionEnum action);
-    SeqEnum doTransition(uint32_t raw, StateEnum state, ActionEnum action);
-    SeqEnum doTransitionNoAction(uint32_t raw, StateEnum state);
+        void printUtf8Byte(char ch);
 
-    SeqEnum feedToState(uint32_t raw);
+    private:
+        enum class ProcessKind
+        {
+            /// Processing bulk-text in ground state succeed, keep on going.
+            ContinueBulk,
+            /// Processing bulk-text failed (various reasons), fallback to finit state machine.
+            FallbackToFSM
+        };
 
-    bool checkMatchingControls(uint32_t introducer, uint32_t terminator);
+        std::tuple<ProcessKind, size_t> parseBulkText(char const* begin, char const* end) noexcept;
+        void processOnceViaStateMachine(uint8_t ch);
 
-    // Actions:
-    SeqEnum doActionClear(uint32_t raw);
-    SeqEnum doActionClearIntermediates(uint32_t raw);
-    SeqEnum doActionClearIntermediatesAndParams(uint32_t raw);
-    SeqEnum doActionClearParamsOnly(uint32_t raw);
+        void handle(ActionClass actionClass, Action action, uint8_t codepoint);
 
-    SeqEnum doActionIgnore(uint32_t raw);
-    SeqEnum doActionPrint(uint32_t raw);
-    SeqEnum doActionExecute(uint32_t raw);
+        State m_state = State::Ground;
+        std::shared_ptr<IParserEvents> m_eventListener;
+        unicode::scan_state m_scanState {};
+    };
 
-    SeqEnum doActionCollectESC(uint32_t raw);
-    SeqEnum doActionCollectCSI(uint32_t raw);
-    SeqEnum doActionCollectDCS(uint32_t raw);
-    SeqEnum doActionCollectParam(uint32_t raw);
+    /// @returns parsed tuple with OSC code and offset to first data parameter byte.
+    template <typename T>
+    inline std::pair<int, size_t> extractCodePrefix(T const& data) noexcept
+    {
+        int code = 0;
+        size_t i = 0;
 
-    SeqEnum doActionParam(uint32_t raw);
-    SeqEnum doActionFinishParam(uint32_t raw);
-    SeqEnum doActionFinishSubparam(uint32_t raw);
+        while (i < data.size() && isdigit(data[i]))
+            code = code * 10 + (int) (data[i++] - '0');
 
-    SeqEnum doActionESCDispatch(uint32_t raw);
-    SeqEnum doActionCSIDispatch(uint32_t raw);
-    SeqEnum doActionDCSStart(uint32_t raw);
-    SeqEnum doActionDCSConsume(uint32_t raw);
-    SeqEnum doActionDCSCollect(uint32_t raw);
-    SeqEnum doActionDCSDispatch(uint32_t raw);
-    SeqEnum doActionOSCStart(uint32_t raw);
-    SeqEnum doActionOSCCollect(uint32_t raw);
-    SeqEnum doActionOSCDispatch(uint32_t raw);
-    SeqEnum doActionSCIDispatch(uint32_t raw);
-};
+        if (i == 0 && !data.empty() && data[0] != ';')
+        {
+            // such as 'L' is encoded as -'L'
+            code = -data[0];
+            ++i;
+        }
 
-} // namespace Parser
-} // namespace VTE
+        if (i < data.size() && data[i] == ';')
+            ++i;
+
+        return std::pair { code, i };
+    }
+
+} // namespace vte::parser

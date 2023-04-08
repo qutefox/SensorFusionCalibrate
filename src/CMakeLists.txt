@@ -36,72 +36,93 @@ set(EIGEN_BUILD_PKGCONFIG OFF)
 # make available
 FetchContent_MakeAvailable(Eigen3)
 
+# declare GSL
+FetchContent_Declare(GSL
+    GIT_REPOSITORY https://github.com/microsoft/GSL.git
+    GIT_TAG        v4.0.0
+)
+
+# make available
+FetchContent_MakeAvailable(GSL)
+
+# declare fmt
+FetchContent_Declare(fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG        9.1.0)
+
+# make available
+FetchContent_MakeAvailable(fmt)
+
+# declare catch2
+FetchContent_Declare(Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.3.2)
+
+FetchContent_MakeAvailable(Catch2)
+
+# declare libunicode
+FetchContent_Declare(libunicode
+    GIT_REPOSITORY https://github.com/contour-terminal/libunicode.git
+    GIT_TAG        v0.3.0
+)
+
+# make available
+FetchContent_MakeAvailable(libunicode)
+
+
 set(PROJECT_SOURCES
-        main.cpp
+    main.cpp
 
-        data/data_types.h
-        data/point.h
-        data/point.cpp
-        data/calibration_result.h
-        data/calibration_result.cpp
+    data/data_types.h
+    data/point.h
+    data/point.cpp
+    data/calibration_result.h
+    data/calibration_result.cpp
 
-        virtual_terminal_emulator/parser/parser_enums.h
-        virtual_terminal_emulator/parser/sequence_argument.h
-        virtual_terminal_emulator/parser/sequence_argument.cpp
-        virtual_terminal_emulator/parser/parser_sequence.h
-        virtual_terminal_emulator/parser/parser_sequence.cpp
-        virtual_terminal_emulator/parser/parser.h
-        virtual_terminal_emulator/parser/parser.cpp
+    virtual_terminal_emulator/parser/interface_parser_events.h
+    virtual_terminal_emulator/parser/parser_state.h
+    virtual_terminal_emulator/parser/parser_action.h
+    virtual_terminal_emulator/parser/parser.h
+    virtual_terminal_emulator/parser/parser.cpp
 
-        #terminal/ansi/ansi_color.h
-        #terminal/ansi/ansi_color.cpp
-        #terminal/ansi/ansi_enums.h
-        #terminal/ansi/ansi_enums.cpp
-        #terminal/ansi/ansi_classes.h
-        #terminal/ansi/ansi_classes.cpp
-        #terminal/ansi/ansi_handler_interface.h
-        #terminal/ansi/ansi.h
-        #terminal/ansi/ansi.cpp
+    datasource/line_parser.h
+    datasource/line_parser.cpp
+    datasource/data_source_interface.h
 
-        datasource/line_parser.h
-        datasource/line_parser.cpp
-        datasource/data_source_interface.h
+    datasource/file/csv_file_config.h
+    datasource/file/csv_file_config.cpp
+    datasource/file/csv_file.h
+    datasource/file/csv_file.cpp
 
-        datasource/file/csv_file_config.h
-        datasource/file/csv_file_config.cpp
-        datasource/file/csv_file.h
-        datasource/file/csv_file.cpp
+    datasource/serial/serialport_config.h
+    datasource/serial/serialport_config.cpp
+    datasource/serial/serialport_id_match.h
+    datasource/serial/serialport_id_match.cpp
+    datasource/serial/serialport_id_matcher.h
+    datasource/serial/serialport_id_matcher.cpp
+    datasource/serial/serialport.h
+    datasource/serial/serialport.cpp
 
-        datasource/serial/serialport_config.h
-        datasource/serial/serialport_config.cpp
-        datasource/serial/serialport_id_match.h
-        datasource/serial/serialport_id_match.cpp
-        datasource/serial/serialport_id_matcher.h
-        datasource/serial/serialport_id_matcher.cpp
-        datasource/serial/serialport.h
-        datasource/serial/serialport.cpp
+    app/application.h
+    app/application.cpp
+    app/settings.h
+    app/settings.cpp
+    app/calibrate.h
+    app/calibrate.cpp
 
-        app/application.h
-        app/application.cpp
-        app/settings.h
-        app/settings.cpp
-        app/calibrate.h
-        app/calibrate.cpp
+    widget/csv_file_control.cpp
+    widget/csv_file_control.h
+    widget/csv_file_control.ui
 
-        widget/csv_file_control.cpp
-        widget/csv_file_control.h
-        widget/csv_file_control.ui
+    widget/serialport_control.cpp
+    widget/serialport_control.h
+    widget/serialport_control.ui
 
-        widget/serialport_control.cpp
-        widget/serialport_control.h
-        widget/serialport_control.ui
+    widget/main_window.cpp
+    widget/main_window.h
+    widget/main_window.ui
 
-        widget/main_window.cpp
-        widget/main_window.h
-        widget/main_window.ui
-
-
-        resources/resources.qrc
+    resources/resources.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -130,6 +151,8 @@ endif()
 target_link_libraries(SensorFusionCalibrate PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(SensorFusionCalibrate PRIVATE Qt${QT_VERSION_MAJOR}::SerialPort)
 target_link_libraries(SensorFusionCalibrate PRIVATE Eigen3::Eigen)
+target_link_libraries(SensorFusionCalibrate PRIVATE Microsoft.GSL::GSL)
+target_link_libraries(SensorFusionCalibrate PRIVATE unicode::core)
 
 set_target_properties(SensorFusionCalibrate PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

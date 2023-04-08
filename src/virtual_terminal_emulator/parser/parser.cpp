@@ -1,711 +1,451 @@
 #include "parser.h"
 
+#include <array>
 #include <cassert>
 
-#define VTE_DISPATCH_UNRIPE            (1)
-#define VTE_SEQ_PARAMETER_BITS         (3)
-#define VTE_SEQ_INTERMEDIATE_BITS      (5)
+using namespace vte::parser;
 
-using namespace VTE::Parser;
-
-Parser::Parser()
+constexpr uint8_t operator"" _b(unsigned long long value)
 {
-
+    return static_cast<uint8_t>(value);
 }
 
-Parser::~Parser()
+struct ParserTable
 {
-
-}
-
-SeqEnum Parser::doNop(uint32_t raw)
-{
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doAction(uint32_t raw, ActionEnum action)
-{
-    switch(action)
-    {
-    case ActionEnum::CLEAR: return doActionClear(raw);
-    case ActionEnum::CLEAR_INT: return doActionClearIntermediates(raw);
-    case ActionEnum::CLEAR_INT_AND_PARAMS: return doActionClearIntermediatesAndParams(raw);
-    case ActionEnum::CLEAR_PARAMS_ONLY: return doActionClearParamsOnly(raw);
-    case ActionEnum::IGNORE: return doActionIgnore(raw);
-    case ActionEnum::PRINT: return doActionPrint(raw);
-    case ActionEnum::EXECUTE: return doActionExecute(raw);
-    case ActionEnum::COLLECT_ESC: return doActionCollectESC(raw);
-    case ActionEnum::COLLECT_CSI: return doActionCollectCSI(raw);
-    case ActionEnum::COLLECT_DCS: return doActionCollectDCS(raw);
-    case ActionEnum::COLLECT_PARAM: return doActionCollectParam(raw);
-    case ActionEnum::PARAM: return doActionParam(raw);
-    case ActionEnum::FINISH_PARAM: return doActionFinishParam(raw);
-    case ActionEnum::FINISH_SUBPARAM: return doActionFinishSubparam(raw);
-    case ActionEnum::ESC_DISPATCH: return doActionESCDispatch(raw);
-    case ActionEnum::CSI_DISPATCH: return doActionCSIDispatch(raw);
-    case ActionEnum::DCS_START: return doActionDCSStart(raw);
-    case ActionEnum::DCS_CONSUME: return doActionDCSConsume(raw);
-    case ActionEnum::DCS_COLLECT: return doActionDCSCollect(raw);
-    case ActionEnum::DCS_DISPATCH: return doActionDCSDispatch(raw);
-    case ActionEnum::OSC_START: return doActionOSCStart(raw);
-    case ActionEnum::OSC_COLLECT: return doActionOSCCollect(raw);
-    case ActionEnum::OSC_DISPATCH: return doActionOSCDispatch(raw);
-    case ActionEnum::SCI_DISPATCH: return doActionSCIDispatch(raw);
+    //! State transition map from (State, Byte) to (State).
+    std::array<std::array<State, 256>, std::numeric_limits<State>::size()> transitions {
+        std::array<State, 256> { State::Ground /*XXX or Undefined?*/ }
     };
-    return SeqEnum::NONE;
-}
 
-SeqEnum Parser::doTransition(uint32_t raw, StateEnum state, ActionEnum action)
-{
-    m_state = state;
-    return doAction(raw, action);
-}
+    //! actions to be invoked upon state entry
+    std::array<Action, std::numeric_limits<Action>::size()> entryEvents { Action::Undefined };
 
-SeqEnum Parser::doTransitionNoAction(uint32_t raw, StateEnum state)
-{
-    m_state = state;
-    return SeqEnum::NONE;
-}
+    //! actions to be invoked upon state exit
+    std::array<Action, std::numeric_limits<Action>::size()> exitEvents { Action::Undefined };
 
-void Parser::reset()
-{
+    //! actions to be invoked for a given (State, Byte) pair.
+    std::array<std::array<Action, 256>, std::numeric_limits<Action>::size()> events;
 
-}
+    //! Standard state machine tables parsing VT225 to VT525.
+    static constexpr ParserTable get();
 
-bool Parser::checkMatchingControls(uint32_t introducer, uint32_t terminator)
-{
-    return ((introducer ^ terminator) & 0x80) == 0;
-}
-
-SeqEnum Parser::doActionClear(uint32_t raw)
-{
-    /* seq.command is set when the sequence is executed,
-    * seq.terminator is set when the final character is received,
-    * and seq.introducer is set when the introducer is received,
-    * and all this happens before the sequence is dispatched.
-    * Therefore these fiedls need not be cleared in any case.
-    */
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionClearIntermediates(uint32_t raw)
-{
-    m_seq.intermediates = 0;
-    m_seq.nIntermediates = 0;
-    return doActionClear(raw);
-}
-
-SeqEnum Parser::doActionClearIntermediatesAndParams(uint32_t raw)
-{
-    doActionClearIntermediates(raw);
-    return doActionClearParamsOnly(raw);
-}
-
-SeqEnum Parser::doActionClearParamsOnly(uint32_t raw)
-{
-    m_seq.args.clear();
-    m_seq.nArgs = 0;
-    m_seq.nFinalArgs = 0;
-    return doActionClear(raw);
-}
-
-SeqEnum Parser::doActionIgnore(uint32_t raw)
-{
-    m_seq.type = SeqEnum::IGNORE;
-    m_seq.command = CommandEnum::NONE;
-    m_seq.terminator = raw;
-    return m_seq.type;
-}
-
-SeqEnum Parser::doActionPrint(uint32_t raw)
-{
-    m_seq.type = SeqEnum::GRAPHIC;
-    m_seq.command = CommandEnum::GRAPHIC;
-    m_seq.terminator = raw;
-    return m_seq.type;
-}
-
-SeqEnum Parser::doActionExecute(uint32_t raw)
-{
-    m_seq.type = SeqEnum::CONTROL;
-    m_seq.terminator = raw;
-    m_seq.command = m_seq.hostControl2Command();
-    return m_seq.type;
-}
-
-SeqEnum Parser::doActionCollectESC(uint32_t raw)
-{
-    assert(raw >= 0x20 && raw <= 0x2f);
-
-    /* ESCAPE sequences only have intermediates or 2/0..2/15, so there's no
-    * need for the extra shift as below for CSI/DCS sequences
-    */
-    m_seq.intermediates |= (VTE_SEQ_MAKE_INTERMEDIATE(raw) << (VTE_SEQ_INTERMEDIATE_BITS * m_seq.nIntermediates++));
-
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionCollectCSI(uint32_t raw)
-{
-    assert(raw >= 0x20 && raw <= 0x2f);
-
-    /* In addition to 2/0..2/15 intermediates, CSI/DCS sequence
-    * can also have one parameter byte 3/12..3/15 at the
-    * start of the parameters (see doActionCollectParam below);
-    * that's what the extra shift is for.
-    */
-    m_seq.intermediates |= (VTE_SEQ_MAKE_INTERMEDIATE(raw) << (VTE_SEQ_PARAMETER_BITS +
-        VTE_SEQ_INTERMEDIATE_BITS * m_seq.nIntermediates++));
-
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionCollectDCS(uint32_t raw)
-{
-
-}
-
-SeqEnum Parser::doActionCollectParam(uint32_t raw)
-{
-    assert(raw >= 0x3c && raw <= 0x3f);
-
-    /* CSI/DCS may optionally have one parameter byte from 3/12..3/15
-    * at the start of the parameters; we put that into the lowest
-    * part of @seq.intermediates.
-    * Note that there can only be *one* such byte; the state machine
-    * already enforces that, so we do not need any additional checks
-    * here.
-    */
-    m_seq.intermediates |= VTE_SEQ_MAKE_PARAMETER(raw);
-
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionParam(uint32_t raw)
-{
-    // assert(raw >= '0' && raw <= '9');
-
-    m_seq.args.back().push(raw);
-
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionFinishParam(uint32_t raw)
-{
-    m_seq.args.back().finish(false);
-    ++m_seq.nArgs;
-    ++m_seq.nFinalArgs;
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionFinishSubparam(uint32_t raw)
-{
-    m_seq.args.back().finish(true);
-    ++m_seq.nArgs;
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionESCDispatch(uint32_t raw)
-{
-    m_seq.type = SeqEnum::ESCAPE;
-    m_seq.terminator = raw;
-    m_seq.charset = VTE_CHARSET_NONE;
-    m_seq.command = m_seq.hostEscape2Command(m_seq.charset);
-    return m_seq.type;
-}
-
-SeqEnum Parser::doActionCSIDispatch(uint32_t raw)
-{
-    /* m_seq is cleared during CSI-ENTER state, thus there's no need
-    * to clear invalid fields here. */
-
-    if (m_seq.nArgs > 0 || m_seq.args.back().hasValue())
+    // {{{ implementation detail
+    struct Range
     {
-        m_seq.args.back().finish(false);
-        ++m_seq.nArgs;
-        ++m_seq.nFinalArgs;
+        uint8_t first;
+        uint8_t last;
+    };
+
+    constexpr void entry(State state, Action action) noexcept
+    {
+        entryEvents[static_cast<size_t>(state)] = action;
     }
 
-    m_seq.type = SeqEnum::CSI;
-    m_seq.terminator = raw;
-    m_seq.command = m_seq.hostCSI2Command();
-
-    return m_seq.type;
-}
-
-SeqEnum Parser::doActionDCSStart(uint32_t raw)
-{
-    doActionClearIntermediatesAndParams(raw);
-    m_seq.argStr.clear();
-    m_seq.introducer = raw;
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionDCSConsume(uint32_t raw)
-{
-    /* m_seq is cleared during DCS-START state, thus there's no need
-    * to clear invalid fields here. */
-
-    if (m_seq.nArgs > 0 || m_seq.args.back().hasValue())
+    constexpr void exit(State state, Action action) noexcept
     {
-        m_seq.args.back().finish(false);
-        ++m_seq.nArgs;
-        ++m_seq.nFinalArgs;
+        exitEvents[static_cast<size_t>(state)] = action;
     }
 
-    m_seq.type = SeqEnum::DCS;
-    m_seq.terminator = raw;
-    m_seq.st = 0;
-
-    unsigned int flags;
-    m_seq.command = m_seq.hostDCS2Command(flags);
-
-    if ((flags & VTE_DISPATCH_UNRIPE) && m_dispatchUnripe) return SeqEnum::DCS;
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionDCSCollect(uint32_t raw)
-{
-    if(!m_seq.argStrPush(raw))
+    // Events
+    constexpr void event(State state, Action action, uint8_t input) noexcept
     {
-        m_state = StateEnum::DCS_IGNORE;
-    }
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionDCSDispatch(uint32_t raw)
-{
-    /* Most of parser->seq was already filled in parser_dcs_consume() */
-    m_seq.st = raw;
-
-    /* We only dispatch a DCS if the introducer and string
-    * terminator are from the same control set, i.e. both
-    * C0 or both C1; we discard sequences with mixed controls.
-    */
-    if (!checkMatchingControls(m_seq.introducer, raw))
-    {
-        return SeqEnum::IGNORE;
+        events[static_cast<size_t>(state)][input] = action;
     }
 
-    return m_seq.type;
-}
-
-SeqEnum Parser::doActionOSCStart(uint32_t raw)
-{
-    doActionClear(raw);
-    m_seq.argStr.clear();
-    m_seq.introducer = raw;
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionOSCCollect(uint32_t raw)
-{
-    /*
-    * Only characters from 0x20..0x7e and >= 0xa0 are allowed here.
-    * Our state-machine already verifies those restrictions.
-    */
-
-    if (!m_seq.argStrPush(raw))
+    constexpr void event(State state, Action action, Range input) noexcept
     {
-        m_state = StateEnum::ST_IGNORE;
+        for (unsigned ch = input.first; ch <= input.last; ++ch)
+            event(state, action, static_cast<uint8_t>(ch));
     }
 
-    return SeqEnum::NONE;
-}
-
-SeqEnum Parser::doActionOSCDispatch(uint32_t raw)
-{
-    /* m_seq is cleared during OSC_START state, thus there's no need
-    * to clear invalid fields here.
-    *
-    * We only dispatch a DCS if the introducer and string
-    * terminator are from the same control set, i.e. both
-    * C0 or both C1; we discard sequences with mixed controls.
-    */
-    if (!checkMatchingControls(m_seq.introducer, raw))
+    template <typename Arg, typename Arg2, typename... Args>
+    constexpr void event(State s, Action a, Arg a1, Arg2 a2, Args... more)
     {
-        return SeqEnum::IGNORE;
+        event(s, a, a1);
+        event(s, a, a2, more...);
     }
 
-    m_seq.type = SeqEnum::OSC;
-    m_seq.command = CommandEnum::OSC;
-    m_seq.st = raw;
-
-    return m_seq.type;
-}
-
-SeqEnum Parser::doActionSCIDispatch(uint32_t raw)
-{
-    m_seq.type = SeqEnum::SCI;
-    m_seq.terminator = raw;
-    m_seq.command = m_seq.hostSCI2Command();
-
-    return m_seq.type;
-}
-
-SeqEnum Parser::feed(uint32_t raw)
-{
-    switch (raw)
+    // Transitions *with* actions
+    constexpr void transition(State from, State to, Action action, uint8_t input)
     {
-    case 0x18: // CAN
-        return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-    case 0x1a: // SUB
-        return doTransition(raw, StateEnum::GROUND, ActionEnum::EXECUTE);
-    case 0x7f: // DEL
-        return doNop(raw);
-    case 0x80 ... 0x8f: // C1 \ {DCS, SOS, SCI, CSI, ST, OSC, PM, APC}
-    case 0x91 ... 0x97:
-    case 0x99:
-            return doTransition(raw, StateEnum::GROUND, ActionEnum::EXECUTE);
-    case 0x98: // SOS
-    case 0x9e: // PM
-    case 0x9f: // APC
-        return doTransitionNoAction(raw, StateEnum::ST_IGNORE);
-        // Shouldn't this use ACTION_CLEAR?
-    case 0x90: // DCS
-        return doTransition(raw, StateEnum::DCS_ENTRY, ActionEnum::DCS_START);
-    case 0x9a: // SCI
-        return doTransition(raw, StateEnum::SCI, ActionEnum::CLEAR);
-    case 0x9d: // OSC
-        return doTransition(raw, StateEnum::OSC_STRING, ActionEnum::OSC_START);
-    case 0x9b: // CSI
-        return doTransition(raw, StateEnum::CSI_ENTRY, ActionEnum::CLEAR_INT_AND_PARAMS);
-    default:
-        return feedToState(raw);
+        event(from, action, input);
+        transitions[static_cast<size_t>(from)][input] = to;
     }
+
+    constexpr void transition(State from, State to, Action action, Range input)
+    {
+        event(from, action, input);
+        for (unsigned ch = input.first; ch <= input.last; ++ch)
+            transitions[static_cast<size_t>(from)][ch] = to;
+    }
+
+    // template <typename Arg, typename Arg2, typename... Args>
+    // constexpr void transition(State s, State t, Action a, Arg a1, Arg2 a2, Args... more)
+    // {
+    //     transition(s, t, a, a1);
+    //     transition(s, t, a, a2, more...);
+    // }
+
+    // Transitions *without* actions
+    constexpr void transition(State from, State to, uint8_t input)
+    {
+        event(from, Action::Ignore, input);
+        transitions[static_cast<size_t>(from)][input] = to;
+    }
+
+    constexpr void transition(State from, State to, Range input)
+    {
+        event(from, Action::Ignore, input);
+        for (unsigned ch = input.first; ch <= input.last; ++ch)
+            transitions[static_cast<size_t>(from)][ch] = to;
+    }
+
+    // template <typename Arg, typename Arg2, typename... Args>
+    // constexpr void transition(State s, State t, Arg a1, Arg2 a2, Args... more)
+    // {
+    //     transition(s, t, a1);
+    //     transition(s, t, a2, more...);
+    // }
+};
+
+constexpr ParserTable ParserTable::get()
+{
+    auto constexpr UnicodeRange = Range { 0x80, 0xFF };
+
+    auto t = ParserTable {};
+
+    // Ground
+    t.entry(State::Ground, Action::GroundStart);
+    t.event(State::Ground, Action::Execute, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::Ground, Action::Print, Range { 0x20_b, 0x7F_b });
+    t.event(State::Ground, Action::Print, Range { 0xA0_b, 0xFF_b });
+    t.event(State::Ground, Action::Print, UnicodeRange);
+
+    // EscapeIntermediate
+    t.event(State::EscapeIntermediate,
+            Action::Execute,
+            Range { 0x00_b, 0x17_b },
+            0x19_b,
+            Range { 0x1C_b, 0x1F_b });
+    t.event(State::EscapeIntermediate, Action::Collect, Range { 0x20_b, 0x2F_b });
+    t.event(State::EscapeIntermediate, Action::Ignore, 0x7F_b);
+    t.transition(State::EscapeIntermediate, State::Ground, Action::ESC_Dispatch, Range { 0x30_b, 0x7E_b });
+
+    // Escape
+    t.entry(State::Escape, Action::Clear);
+    t.event(State::Escape, Action::Execute, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::Escape, Action::Ignore, 0x7F_b);
+    t.transition(State::Escape, State::IgnoreUntilST, 0x58_b); // SOS (start of string): ESC X
+    t.transition(State::Escape, State::PM_String, 0x5E_b);     // PM (private message): ESC ^
+    t.transition(State::Escape, State::APC_String, 0x5F_b);    // APC (application program command): ESC _
+    t.transition(State::Escape, State::DCS_Entry, 0x50_b);
+    t.transition(State::Escape, State::OSC_String, 0x5D_b);
+    t.transition(State::Escape, State::CSI_Entry, 0x5B_b);
+    t.transition(State::Escape, State::Ground, Action::ESC_Dispatch, Range { 0x30_b, 0x4F_b });
+    t.transition(State::Escape, State::Ground, Action::ESC_Dispatch, Range { 0x51_b, 0x57_b });
+    t.transition(State::Escape, State::Ground, Action::ESC_Dispatch, 0x59_b);
+    t.transition(State::Escape, State::Ground, Action::ESC_Dispatch, 0x5A_b);
+    t.transition(State::Escape, State::Ground, Action::Ignore, 0x5C_b); // ST for OSC, DCS, ...
+    t.transition(State::Escape, State::Ground, Action::ESC_Dispatch, Range { 0x60_b, 0x7E_b });
+    t.transition(State::Escape, State::EscapeIntermediate, Action::Collect, Range { 0x20_b, 0x2F_b });
+
+    // IgnoreUntilST
+    t.event(State::IgnoreUntilST, Action::Ignore, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    // t.transition(State::IgnoreUntilST, State::Ground, 0x9C_b);
+
+    // DCS_Entry
+    t.entry(State::DCS_Entry, Action::Clear);
+    t.event(State::DCS_Entry, Action::Ignore, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::DCS_Entry, Action::Ignore, 0x7F_b);
+    t.transition(State::DCS_Entry, State::DCS_Intermediate, Action::Collect, Range { 0x20_b, 0x2F_b });
+    t.transition(State::DCS_Entry, State::DCS_Ignore, 0x3A_b);
+    t.transition(State::DCS_Entry, State::DCS_Param, Action::Param, Range { 0x30_b, 0x39_b });
+    t.transition(State::DCS_Entry, State::DCS_Param, Action::Param, 0x3B_b);
+    t.transition(State::DCS_Entry, State::DCS_Param, Action::CollectLeader, Range { 0x3C_b, 0x3F_b });
+    t.transition(State::DCS_Entry, State::DCS_PassThrough, Range { 0x40_b, 0x7E_b });
+
+    // DCS_Ignore
+    t.event(State::DCS_Ignore,
+            Action::Ignore,
+            Range { 0x00_b, 0x17_b },
+            0x19_b,
+            Range { 0x1C_b, 0x1F_b },
+            Range { 0x20_b, 0x7F_b });
+    t.event(State::DCS_Ignore, Action::Print, Range { 0xA0_b, 0xFF_b });
+    t.event(State::DCS_Ignore, Action::Print, UnicodeRange);
+    // t.transition(State::DCS_Ignore, State::Ground, 0x9C_b);
+
+    // DCS_Intermediate
+    t.event(
+        State::DCS_Intermediate, Action::Ignore, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::DCS_Intermediate, Action::Collect, Range { 0x20_b, 0x2F_b });
+    t.event(State::DCS_Intermediate, Action::Ignore, 0x7F_b);
+    t.transition(State::DCS_Intermediate, State::DCS_PassThrough, Range { 0x40_b, 0x7E_b });
+
+    // DCS_PassThrough
+    t.entry(State::DCS_PassThrough, Action::Hook);
+    t.event(State::DCS_PassThrough,
+            Action::Put,
+            Range { 0x00_b, 0x17_b },
+            0x19_b,
+            Range { 0x1C_b, 0x1F_b },
+            Range { 0x20_b, 0x7E_b });
+    t.event(State::DCS_PassThrough, Action::Ignore, 0x7F_b);
+    t.exit(State::DCS_PassThrough, Action::Unhook);
+    // t.transition(State::DCS_PassThrough, State::Ground, 0x9C_b);
+
+    // DCS_Param
+    t.event(State::DCS_Param, Action::Execute, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::DCS_Param, Action::Param, Range { 0x30_b, 0x39_b }, 0x3B_b);
+    t.event(State::DCS_Param, Action::Ignore, 0x7F_b);
+    t.transition(State::DCS_Param, State::DCS_Ignore, 0x3A_b);
+    t.transition(State::DCS_Param, State::DCS_Ignore, Range { 0x3C_b, 0x3F_b });
+    t.transition(State::DCS_Param, State::DCS_Intermediate, Range { 0x20_b, 0x2F_b });
+    t.transition(State::DCS_Param, State::DCS_PassThrough, Range { 0x40_b, 0x7E_b });
+
+    // OSC_String
+    // (xterm extension to also allow BEL (0x07) as OSC terminator)
+    t.entry(State::OSC_String, Action::OSC_Start);
+    t.event(State::OSC_String,
+            Action::Ignore,
+            Range { 0x00_b, 0x06_b },
+            Range { 0x08_b, 0x17_b },
+            0x19_b,
+            Range { 0x1C_b, 0x1F_b });
+    t.event(State::OSC_String, Action::OSC_Put, Range { 0x20_b, 0x7F_b });
+    t.event(State::OSC_String, Action::OSC_Put, Range { 0xA0_b, 0xFF_b });
+    t.event(State::OSC_String, Action::OSC_Put, UnicodeRange);
+    t.exit(State::OSC_String, Action::OSC_End);
+    // t.transition(State::OSC_String, State::Ground, 0x9C_b);
+    t.transition(State::OSC_String, State::Ground, 0x07_b);
+
+    // APC_String
+    // APC := ESC _ ... ST
+    t.entry(State::APC_String, Action::APC_Start);
+    t.event(State::APC_String, Action::APC_Put, Range { 0x20_b, 0x7F_b });
+    t.event(State::APC_String, Action::APC_Put, Range { 0xA0_b, 0xFF_b });
+    t.event(State::APC_String, Action::APC_Put, UnicodeRange);
+    t.exit(State::APC_String, Action::APC_End);
+    // t.transition(State::APC_String, State::Ground, 0x9C_b); // ST
+    t.transition(State::APC_String, State::Ground, 0x07_b); // BEL
+
+    // PM_String
+    // PM := ESC ^ ... ST
+    t.entry(State::PM_String, Action::PM_Start);
+    t.event(State::PM_String,
+            Action::PM_Put,
+            Range { 0x00_b, 0x17_b },
+            0x19_b,
+            Range { 0x1C_b, 0x1F_b },
+            Range { 0x20_b, 0x7F_b },
+            Range { 0xA0_b, 0xFF_b });
+    t.event(State::PM_String, Action::PM_Put, UnicodeRange);
+    t.exit(State::PM_String, Action::PM_End);
+    // t.transition(State::PM_String, State::Ground, 0x9C_b); // ST
+    t.transition(State::PM_String, State::Ground, 0x07_b); // BEL
+
+    // CSI_Entry
+    t.entry(State::CSI_Entry, Action::Clear);
+    t.event(State::CSI_Entry, Action::Execute, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::CSI_Entry, Action::Ignore, 0x7F_b);
+    t.transition(State::CSI_Entry, State::Ground, Action::CSI_Dispatch, Range { 0x40_b, 0x7E_b });
+    t.transition(State::CSI_Entry, State::CSI_Intermediate, Action::Collect, Range { 0x20_b, 0x2F_b });
+    t.transition(State::CSI_Entry, State::CSI_Ignore, 0x3A_b);
+    t.transition(State::CSI_Entry, State::CSI_Param, Action::ParamDigit, Range { 0x30_b, 0x39_b });
+    t.transition(State::CSI_Entry, State::CSI_Param, Action::ParamSeparator, 0x3B_b);
+    t.transition(State::CSI_Entry, State::CSI_Param, Action::CollectLeader, Range { 0x3C_b, 0x3F_b });
+
+    // CSI_Param
+    t.event(State::CSI_Param, Action::Execute, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::CSI_Param, Action::ParamDigit, Range { 0x30_b, 0x39_b });
+    t.event(State::CSI_Param, Action::ParamSubSeparator, 0x3A_b);
+    t.event(State::CSI_Param, Action::ParamSeparator, 0x3B_b);
+    t.event(State::CSI_Param, Action::Ignore, 0x7F_b);
+    t.transition(State::CSI_Param, State::CSI_Ignore, Range { 0x3C_b, 0x3F_b });
+    t.transition(State::CSI_Param, State::CSI_Intermediate, Action::Collect, Range { 0x20_b, 0x2F_b });
+    t.transition(State::CSI_Param, State::Ground, Action::CSI_Dispatch, Range { 0x40_b, 0x7E_b });
+
+    // CSI_Ignore
+    t.event(State::CSI_Ignore, Action::Execute, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::CSI_Ignore, Action::Ignore, Range { 0x20_b, 0x3F_b }, 0x7F_b);
+    t.transition(State::CSI_Ignore, State::Ground, Range { 0x40_b, 0x7E_b });
+
+    // CSI_Intermediate
+    t.event(
+        State::CSI_Intermediate, Action::Execute, Range { 0x00_b, 0x17_b }, 0x19_b, Range { 0x1C_b, 0x1F_b });
+    t.event(State::CSI_Intermediate, Action::Collect, Range { 0x20_b, 0x2F_b });
+    t.event(State::CSI_Intermediate, Action::Ignore, 0x7F_b);
+    t.transition(State::CSI_Intermediate, State::CSI_Ignore, Range { 0x30_b, 0x3F_b });
+    t.transition(State::CSI_Intermediate, State::Ground, Action::CSI_Dispatch, Range { 0x40_b, 0x7E_b });
+
+    // * -> Ground, ...
+    for (State anywhere = std::numeric_limits<State>::min(); anywhere <= std::numeric_limits<State>::max();
+         ++anywhere)
+    {
+        t.transition(anywhere, State::Ground, 0x18_b);
+        t.transition(anywhere, State::Ground, 0x1A_b);
+        t.transition(anywhere, State::Escape, 0x1B_b);
+
+        // C1 control need special 2-byte treatment due to this Parser
+        // being UTF-8.
+        // t.transition(anywhere, State::Ground, 0x9C_b);
+        // t.transition(anywhere, State::Ground, Range{0x80_b, 0x8F_b});
+        // t.transition(anywhere, State::Ground, Range{0x91_b, 0x97_b});
+        // t.transition(anywhere, State::DCS_Entry, 0x90_b);     // C1: DCS
+        // t.transition(anywhere, State::IgnoreUntilST, 0x98_b); // C1: SOS
+        // t.transition(anywhere, State::PM_String, 0x9E_b);     // C1: PM
+        // t.transition(anywhere, State::APC_String, 0x9F_b);    // C1: APC
+    }
+
+    // TODO: verify the above is correct (programatically as much as possible)
+    // TODO: see if we can reduce the preassure on L2 caches (is this even an issue?)
+
+    return t;
 }
 
-SeqEnum Parser::feedToState(uint32_t raw)
+void Parser::parseFragment(gsl::span<char const> data)
 {
-    switch (m_state)
+    const auto* input = data.data();
+    const auto* const end = data.data() + data.size();
+
+    while (input != end)
     {
-    case StateEnum::GROUND:
-        switch (raw)
+        auto const [processKind, processedByteCount] = parseBulkText(input, end);
+        switch (processKind)
         {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-            case 0x80 ... 0x9f: // C1
-                return doAction(raw, ActionEnum::EXECUTE);
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-        }
-        return doAction(raw, ActionEnum::PRINT);
-
-    case StateEnum::DCS_PASS_ESC:
-    case StateEnum::OSC_STRING_ESC:
-        if (raw == 0x5c) // '\'
-        {
-            switch (m_state)
-            {
-            case StateEnum::DCS_PASS_ESC:
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::DCS_DISPATCH);
-            case StateEnum::OSC_STRING_ESC:
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::OSC_DISPATCH);
-            default:
+            case ProcessKind::ContinueBulk:
+                // clang-format off
+                input += processedByteCount;
                 break;
-            }
+                // clang-format on
+            case ProcessKind::FallbackToFSM:
+                processOnceViaStateMachine(static_cast<uint8_t>(*input++));
+                break;
         }
-
-        // Do the deferred clear and fallthrough to STATE_ESC
-        doTransition(0x1b, // ESC
-            StateEnum::ESC, ActionEnum::CLEAR_INT);
-
-        [[fallthrough]];
-        case StateEnum::ESC:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                return doAction(raw, ActionEnum::EXECUTE);
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                return doTransition(raw, StateEnum::ESC_INT, ActionEnum::COLLECT_ESC);
-            case 0x30 ... 0x4f: // ['0' - '~']
-            case 0x51 ... 0x57: // { 'P', 'X', 'Z' '[', ']', '^', '_' }
-            case 0x59:
-            case 0x5c:
-            case 0x60 ... 0x7e:
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::ESC_DISPATCH);
-            case 0x50: // 'P'
-                return doTransition(raw, StateEnum::DCS_ENTRY, ActionEnum::DCS_START);
-            case 0x5a: // 'Z'
-                return doTransition(raw, StateEnum::SCI, ActionEnum::CLEAR);
-            case 0x5b: // '['
-                return doTransition(raw, StateEnum::CSI_ENTRY, ActionEnum::CLEAR_PARAMS_ONLY);
-                // rest already cleaned on ESC state entry
-            case 0x5d: // ']'
-                return doTransition(raw, StateEnum::OSC_STRING, ActionEnum::OSC_START);
-            case 0x58: // 'X'
-            case 0x5e: // '^'
-            case 0x5f: // '_'
-                return doTransitionNoAction(raw, StateEnum::ST_IGNORE);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-
-        case StateEnum::ESC_INT:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                return doAction(raw, ActionEnum::EXECUTE);
-            case 0x1b: // ESC
-                    return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                    return doAction(raw, ActionEnum::COLLECT_ESC);
-            case 0x30 ... 0x7e: // ['0' - '~']
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::ESC_DISPATCH);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-
-        case StateEnum::CSI_ENTRY:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                return doAction(raw, ActionEnum::EXECUTE);
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                return doTransition(raw, StateEnum::CSI_INT, ActionEnum::COLLECT_CSI);
-            case 0x30 ... 0x39: // ['0' - '9']
-                return doTransition(raw, StateEnum::CSI_PARAM, ActionEnum::PARAM);
-            case 0x3a: // ':'
-                return doTransition(raw, StateEnum::CSI_PARAM, ActionEnum::FINISH_SUBPARAM);
-            case 0x3b: // ';'
-                return doTransition(raw, StateEnum::CSI_PARAM, ActionEnum::FINISH_PARAM);
-            case 0x3c ... 0x3f: // ['<' - '?']
-                return doTransition(raw, StateEnum::CSI_PARAM, ActionEnum::COLLECT_PARAM);
-            case 0x40 ... 0x7e: // ['@' - '~']
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::CSI_DISPATCH);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransitionNoAction(raw, StateEnum::CSI_IGNORE);
-
-        case StateEnum::CSI_PARAM:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                    return doAction(raw, ActionEnum::EXECUTE);
-            case 0x1b: // ESC
-                    return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                    return doTransition(raw, StateEnum::CSI_INT, ActionEnum::COLLECT_CSI);
-            case 0x30 ... 0x39: // ['0' - '9']
-                    return doAction(raw, ActionEnum::PARAM);
-            case 0x3a: // ':'
-                    return doAction(raw, ActionEnum::FINISH_SUBPARAM);
-            case 0x3b: // ';'
-                    return doAction(raw, ActionEnum::FINISH_PARAM);
-            case 0x3c ... 0x3f: // ['<' - '?']
-                    return doTransitionNoAction(raw, StateEnum::CSI_IGNORE);
-            case 0x40 ... 0x7e: // ['@' - '~']
-                    return doTransition(raw, StateEnum::GROUND, ActionEnum::CSI_DISPATCH);
-            case 0x9c: // ST
-                    return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransitionNoAction(raw, StateEnum::CSI_IGNORE);
-
-        case StateEnum::CSI_INT:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                return doAction(raw, ActionEnum::EXECUTE);
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                return doAction(raw, ActionEnum::COLLECT_CSI);
-            case 0x30 ... 0x3f: // ['0' - '?']
-                return doTransitionNoAction(raw, StateEnum::CSI_IGNORE);
-            case 0x40 ... 0x7e: // ['@' - '~']
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::CSI_DISPATCH);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransitionNoAction(raw, StateEnum::CSI_IGNORE);
-
-        case StateEnum::CSI_IGNORE:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                return doAction(raw, ActionEnum::EXECUTE);
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x3f: // [' ' - '?']
-                return doNop(raw);
-            case 0x40 ... 0x7e: // ['@' - '~']
-                return doTransitionNoAction(raw, StateEnum::GROUND);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doNop(raw);
-
-        case StateEnum::DCS_ENTRY:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ ESC
-            case 0x1c ... 0x1f:
-                return doAction(raw, ActionEnum::IGNORE);
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                return doTransition(raw, StateEnum::DCS_INT, ActionEnum::DCS_COLLECT);
-            case 0x30 ... 0x39: // ['0' - '9']
-                return doTransition(raw, StateEnum::DCS_PARAM, ActionEnum::PARAM);
-            case 0x3a: // ':'
-                return doTransition(raw, StateEnum::DCS_PARAM, ActionEnum::FINISH_SUBPARAM);
-            case 0x3b: // ';'
-                return doTransition(raw, StateEnum::DCS_PARAM, ActionEnum::FINISH_PARAM);
-            case 0x3c ... 0x3f: // ['<' - '?']
-                return doTransition(raw, StateEnum::DCS_PARAM, ActionEnum::COLLECT_PARAM);
-            case 0x40 ... 0x7e: // ['@' - '~']
-                return doTransition(raw, StateEnum::DCS_PASS, ActionEnum::DCS_CONSUME);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransition(raw, StateEnum::DCS_PASS, ActionEnum::DCS_CONSUME);
-
-        case StateEnum::DCS_PARAM:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                return doAction(raw, ActionEnum::IGNORE);
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                return doTransition(raw, StateEnum::DCS_INT, ActionEnum::DCS_COLLECT);
-            case 0x30 ... 0x39: // ['0' - '9']
-                return doAction(raw, ActionEnum::PARAM);
-            case 0x3a: // ':'
-                return doAction(raw, ActionEnum::FINISH_SUBPARAM);
-            case 0x3b: // ';'
-                return doAction(raw, ActionEnum::FINISH_PARAM);
-            case 0x3c ... 0x3f: // ['<' - '?']
-                return doTransitionNoAction(raw, StateEnum::DCS_IGNORE);
-            case 0x40 ... 0x7e: // ['@' - '~']
-                return doTransition(raw, StateEnum::DCS_PASS, ActionEnum::DCS_CONSUME);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransition(raw, StateEnum::DCS_PASS, ActionEnum::DCS_CONSUME);
-
-        case StateEnum::DCS_INT:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // C0 \ { ESC }
-            case 0x1c ... 0x1f:
-                    return doAction(raw, ActionEnum::IGNORE);
-            case 0x1b: // ESC
-                    return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x20 ... 0x2f: // [' ' - '\']
-                    return doAction(raw, ActionEnum::DCS_COLLECT);
-            case 0x30 ... 0x3f: // ['0' - '?']
-                    return doTransitionNoAction(raw, StateEnum::DCS_IGNORE);
-            case 0x40 ... 0x7e: // ['@' - '~']
-                    return doTransition(raw, StateEnum::DCS_PASS, ActionEnum::DCS_CONSUME);
-            case 0x9c: // ST
-                    return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doTransition(raw, StateEnum::DCS_PASS, ActionEnum::DCS_CONSUME);
-
-        case StateEnum::DCS_PASS:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // ASCII \ { ESC }
-            case 0x1c ... 0x7f:
-                return doAction(raw, ActionEnum::DCS_COLLECT);
-            case 0x1b: // ESC
-                return doTransitionNoAction(raw, StateEnum::DCS_PASS_ESC);
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::DCS_DISPATCH);
-            }
-            return doAction(raw, ActionEnum::DCS_COLLECT);
-
-        case StateEnum::DCS_IGNORE:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // ASCII \ { ESC }
-            case 0x1c ... 0x7f:
-                    return doNop(raw);
-            case 0x1b: // ESC
-                    return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x9c: // ST
-                    return doTransitionNoAction(raw, StateEnum::GROUND);
-            }
-            return doNop(raw);
-
-        case StateEnum::OSC_STRING:
-            switch (raw)
-            {
-            case 0x00 ... 0x06: // C0 \ { BEL, ESC }
-            case 0x08 ... 0x1a:
-            case 0x1c ... 0x1f:
-                return doNop(raw);
-            case 0x1b: // ESC
-                return doTransitionNoAction(raw, StateEnum::OSC_STRING_ESC);
-            case 0x20 ... 0x7f: // [' ' - DEL]
-                return doAction(raw, ActionEnum::OSC_COLLECT);
-            case 0x07: // BEL
-            case 0x9c: // ST
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::OSC_DISPATCH);
-            }
-            return doAction(raw, ActionEnum::OSC_COLLECT);
-
-        case StateEnum::ST_IGNORE:
-            switch (raw)
-            {
-            case 0x00 ... 0x1a: // ASCII \ { ESC }
-            case 0x1c ... 0x7f:
-                    return doNop(raw);
-            case 0x1b: // ESC
-                    return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x9c: // ST
-                    return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-            }
-            return doNop(raw);
-
-        case StateEnum::SCI:
-            switch (raw)
-            {
-            case 0x1b: // ESC
-                return doTransition(raw, StateEnum::ESC, ActionEnum::CLEAR_INT);
-            case 0x08 ... 0x0d: // BS, HT, LF, VT, FF, CR
-            case 0x20 ... 0x7e: // [' ' - '~']
-                return doTransition(raw, StateEnum::GROUND, ActionEnum::SCI_DISPATCH);
-            }
-            return doTransition(raw, StateEnum::GROUND, ActionEnum::IGNORE);
-        }
-
-        // Should never reach this!
-        return SeqEnum::NONE;
-
-}
-
-void Parser::setDispatchUnripe(bool enable)
-{
-    m_dispatchUnripe = enable;
-}
-
-void Parser::ignoreUntilStringTerminated()
-{
-    switch (m_state)
-    {
-    case StateEnum::DCS_PASS:
-        doTransitionNoAction(0, StateEnum::DCS_IGNORE);
-        break;
-    default:
-        // Should never ever reach here.
-        // Maybe add assert!
-        break;
     }
 }
 
+void Parser::processOnceViaStateMachine(uint8_t ch)
+{
+    auto const s = static_cast<size_t>(m_state);
+    ParserTable static constexpr table = ParserTable::get();
+
+    if (auto const t = table.transitions[s][static_cast<uint8_t>(ch)]; t != State::Undefined)
+    {
+        // fmt::print("VTParser: Transitioning from {} to {}", _state, t);
+        handle(ActionClass::Leave, table.exitEvents[s], ch);
+        handle(ActionClass::Transition, table.events[s][static_cast<size_t>(ch)], ch);
+        m_state = t;
+        handle(ActionClass::Enter, table.entryEvents[static_cast<size_t>(t)], ch);
+    }
+    else if (Action const a = table.events[s][ch]; a != Action::Undefined)
+        handle(ActionClass::Event, a, ch);
+    else
+        m_eventListener->error("Parser error: Unknown action for state/input pair.");
+}
+
+std::tuple<Parser::ProcessKind, size_t> Parser::parseBulkText(char const* begin, char const* end) noexcept
+{
+    const auto* input = begin;
+    if (m_state != State::Ground)
+        return { ProcessKind::FallbackToFSM, 0 };
+
+    auto const maxCharCount = m_eventListener->maxBulkTextSequenceWidth();
+    if (!maxCharCount)
+        return { ProcessKind::FallbackToFSM, 0 };
+
+    auto const chunk = std::string_view(input, static_cast<size_t>(std::distance(input, end)));
+    auto const [cellCount, next, subStart, subEnd] = unicode::scan_text(m_scanState, chunk, maxCharCount);
+
+    if (next == input)
+        return { ProcessKind::FallbackToFSM, 0 };
+
+    // We do not test on cellCount>0 because the scan could contain only a ZWJ (zero width
+    // joiner), and that would be misleading.
+
+    assert(subStart <= subEnd);
+    auto const byteCount = static_cast<size_t>(std::distance(subStart, subEnd));
+    if (byteCount == 0)
+        return { ProcessKind::FallbackToFSM, 0 };
+
+    assert(cellCount <= maxCharCount);
+    assert(subEnd <= chunk.data() + chunk.size());
+    assert(next <= chunk.data() + chunk.size());
+
+    auto const text = std::string_view { subStart, byteCount };
+    if (m_scanState.utf8.expectedLength == 0)
+    {
+        if (!text.empty())
+        {
+            m_eventListener->print(text, cellCount);
+        }
+
+        // This optimization is for the `cat`-people.
+        // It further optimizes the throughput performance by bypassing
+        // the FSM for the `(TEXT LF+)+`-case.
+        //
+        // As of bench-headless, the performance incrrease is about 50x.
+        if (input != end && *input == '\n')
+            m_eventListener->execute(*input++);
+    }
+    else
+    {
+        // fmt::print("Parser.text: incomplete UTF-8 sequence at end: {}/{}\n",
+        //            _scanState.utf8.currentLength,
+        //            _scanState.utf8.expectedLength);
+
+        // for (char const ch: text)
+        //     printUtf8Byte(ch);
+    }
+
+    return { ProcessKind::ContinueBulk, static_cast<size_t>(std::distance(input, next)) };
+}
+
+void Parser::printUtf8Byte(char ch)
+{
+    unicode::ConvertResult const r = unicode::from_utf8(m_scanState.utf8, (uint8_t) ch);
+    if (std::holds_alternative<unicode::Incomplete>(r))
+        return;
+
+    auto constexpr ReplacementCharacter = char32_t { 0xFFFD };
+    auto const codepoint = std::holds_alternative<unicode::Success>(r) ? std::get<unicode::Success>(r).value
+                                                                       : ReplacementCharacter;
+    m_eventListener->print(codepoint);
+    m_scanState.lastCodepointHint = codepoint;
+}
+
+void Parser::handle(ActionClass actionClass, Action action, uint8_t codepoint)
+{
+    (void) actionClass;
+    auto const ch = static_cast<char>(codepoint);
+
+    switch (action)
+    {
+        case Action::GroundStart: m_scanState.lastCodepointHint = 0; break;
+        case Action::Clear: m_eventListener->clear(); break;
+        case Action::CollectLeader: m_eventListener->collectLeader(ch); break;
+        case Action::Collect: m_eventListener->collect(ch); break;
+        case Action::Param: m_eventListener->param(ch); break;
+        case Action::ParamDigit: m_eventListener->paramDigit(ch); break;
+        case Action::ParamSeparator: m_eventListener->paramSeparator(); break;
+        case Action::ParamSubSeparator: m_eventListener->paramSubSeparator(); break;
+        case Action::Execute: m_eventListener->execute(ch); break;
+        case Action::ESC_Dispatch: m_eventListener->dispatchESC(ch); break;
+        case Action::CSI_Dispatch: m_eventListener->dispatchCSI(ch); break;
+        case Action::Print: printUtf8Byte(ch); break;
+        case Action::OSC_Start: m_eventListener->startOSC(); break;
+        case Action::OSC_Put: m_eventListener->putOSC(ch); break;
+        case Action::OSC_End: m_eventListener->dispatchOSC(); break;
+        case Action::Hook: m_eventListener->hook(ch); break;
+        case Action::Put: m_eventListener->put(ch); break;
+        case Action::Unhook: m_eventListener->unhook(); break;
+        case Action::APC_Start: m_eventListener->startAPC(); break;
+        case Action::APC_Put: m_eventListener->putAPC(ch); break;
+        case Action::APC_End: m_eventListener->dispatchAPC(); break;
+        case Action::PM_Start: m_eventListener->startPM(); break;
+        case Action::PM_Put: m_eventListener->putPM(ch); break;
+        case Action::PM_End: m_eventListener->dispatchPM(); break;
+        case Action::Ignore:
+        case Action::Undefined: break;
+    }
+}
