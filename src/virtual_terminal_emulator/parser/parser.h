@@ -13,7 +13,7 @@
 
 #include "parser_state.h"
 #include "parser_action.h"
-#include "interface_parser_events.h"
+#include "parser_events_interface.h"
 
 namespace vte::parser
 {

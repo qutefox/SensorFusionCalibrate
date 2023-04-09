@@ -1,63 +1,51 @@
-cmake_minimum_required(VERSION 3.5)
+﻿cmake_minimum_required(VERSION 3.5)
 
-project(SensorFusionCalibrate VERSION 0.1 LANGUAGES CXX)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+project(SensorFusionCalibrateApp VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wa,-mbig-obj") # required for Eigen::EigenSolver
-
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wa,-mbig-obj") # required for Eigen::EigenSolver
+set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets SerialPort)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets SerialPort)
+list(APPEND CMAKE_PREFIX_PATH "C:\\qt-6.5.0-static")
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort)
+qt_standard_project_setup()
 
 # enable FetchContent
 include(FetchContent)
 
-# declare Eigen
+# declare Eigen3
 FetchContent_Declare(Eigen3
     GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
     GIT_TAG        3.4.0
 )
-
 set(EIGEN_BUILD_DOC OFF)
-# note: To disable eigen tests,
-# you should put this code in a add_subdirectory to avoid to change
-# BUILD_TESTING for your own project too since variables are directory
-# scoped
 set(BUILD_TESTING OFF)
 set(EIGEN_BUILD_PKGCONFIG OFF)
-
-# make available
 FetchContent_MakeAvailable(Eigen3)
+
 
 # declare GSL
 FetchContent_Declare(GSL
     GIT_REPOSITORY https://github.com/microsoft/GSL.git
     GIT_TAG        v4.0.0
 )
-
-# make available
 FetchContent_MakeAvailable(GSL)
 
 # declare fmt
 FetchContent_Declare(fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG        9.1.0)
-
-# make available
+    GIT_TAG        9.1.0
+)
 FetchContent_MakeAvailable(fmt)
 
 # declare catch2
 FetchContent_Declare(Catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v3.3.2)
-
+    GIT_TAG        v3.3.2
+)
 FetchContent_MakeAvailable(Catch2)
 
 # declare libunicode
@@ -65,13 +53,10 @@ FetchContent_Declare(libunicode
     GIT_REPOSITORY https://github.com/contour-terminal/libunicode.git
     GIT_TAG        v0.3.0
 )
-
-# make available
 FetchContent_MakeAvailable(libunicode)
 
-
-set(PROJECT_SOURCES
-    main.cpp
+add_executable(SensorFusionCalibrateApp
+	main.cpp
 
     data/data_types.h
     data/point.h
@@ -79,7 +64,7 @@ set(PROJECT_SOURCES
     data/calibration_result.h
     data/calibration_result.cpp
 
-    virtual_terminal_emulator/parser/interface_parser_events.h
+    virtual_terminal_emulator/parser/parser_events_interface.h
     virtual_terminal_emulator/parser/parser_state.h
     virtual_terminal_emulator/parser/parser_action.h
     virtual_terminal_emulator/parser/parser.h
@@ -125,47 +110,13 @@ set(PROJECT_SOURCES
     resources/resources.qrc
 )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(SensorFusionCalibrate
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET SensorFusionCalibrate APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else()
-    if(ANDROID)
-        add_library(SensorFusionCalibrate SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(SensorFusionCalibrate
-            ${PROJECT_SOURCES}
-        )
-    endif()
-endif()
-
-target_link_libraries(SensorFusionCalibrate PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(SensorFusionCalibrate PRIVATE Qt${QT_VERSION_MAJOR}::SerialPort)
-target_link_libraries(SensorFusionCalibrate PRIVATE Eigen3::Eigen)
-target_link_libraries(SensorFusionCalibrate PRIVATE Microsoft.GSL::GSL)
-target_link_libraries(SensorFusionCalibrate PRIVATE unicode::core)
-
-set_target_properties(SensorFusionCalibrate PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
-
-install(TARGETS SensorFusionCalibrate
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::Core)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::Widgets)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::SerialPort)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE Eigen3::Eigen)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE Microsoft.GSL::GSL)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE unicode::core)
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(SensorFusionCalibrate)
+    qt_finalize_executable(SensorFusionCalibrateApp)
 endif()
