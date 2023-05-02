@@ -6,6 +6,7 @@
 
 #include <datasource/file/csv_file.h>
 #include <datasource/serial/serialport.h>
+#include <widget/calibration_result.h>
 
 Application::Application(int argc, char *argv[])
     : QApplication{ argc, argv }
@@ -60,35 +61,48 @@ void Application::removeDataSourceWidgets()
     }
 }
 
+QWidget* Application::getTabByName(const QString& name)
+{
+    QTabWidget* tabWidget = m_mainWindow->ui()->tabWidget;
+    for (std::size_t i = 0; i < tabWidget->count(); ++i)
+    {
+        QWidget* tabElementWidget = tabWidget->widget(i);
+        QString tabName = tabElementWidget->objectName();
+        if (tabName == name)
+        {
+            return tabElementWidget;
+        }
+    }
+    return nullptr;
+}
+
 void Application::addDataSourceWidget()
 {
-    QWidget* tabWidget = m_mainWindow->ui()->tabWidget->widget(0);
-    QVBoxLayout* tabLayout = qobject_cast<QVBoxLayout*>(tabWidget->layout());
+    QWidget* tabElementWidget = getTabByName("result");
+    if (tabElementWidget == nullptr) return;
 
-    std::size_t deviceId = m_calibrators.size();
-    m_calibrators.push_back(std::make_unique<Calibrate>(++deviceId, tabWidget));
-    QWidget* calibratorWidget = m_calibrators.back().get();
-    tabLayout->addWidget(calibratorWidget);
+    std::size_t deviceId = m_calibrators.size()+1;
+    CalibrationResultWidget* resultWidget = new CalibrationResultWidget(deviceId, tabElementWidget);
+    m_calibrators.push_back(std::make_unique<Calibrate>(resultWidget));
+    tabElementWidget->layout()->addWidget(resultWidget);
 }
 
 void Application::resetResultWidgets()
 {
-    QTabWidget* tabWidget = m_mainWindow->ui()->tabWidget;
-    for (int i = 0; i < tabWidget->count(); i++)
+    QWidget* tabElementWidget = getTabByName("result");
+    if (tabElementWidget == nullptr) return;
+
+    m_calibrators.clear();
+
+    QLayoutItem* wItem;
+    while ((wItem = tabElementWidget->layout()->takeAt(0)) != nullptr)
     {
-        QWidget* tabElementWidget = tabWidget->widget(i);
-        QString tabName = tabElementWidget->objectName();
-        if (tabName == "result")
+        if (wItem->widget())
         {
-            tabElementWidget->setUpdatesEnabled(false);
-            qDeleteAll(tabElementWidget->findChildren<QWidget*>("", Qt::FindDirectChildrenOnly));
-            tabElementWidget->setUpdatesEnabled(true);
-
-            m_calibrators.clear();
-
-            break;
+            wItem->widget()->setParent(nullptr);
         }
-    }
+        delete wItem;
+    }    
 }
 
 void Application::resetTabWidgets()

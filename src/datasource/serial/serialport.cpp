@@ -32,6 +32,11 @@ SerialPortDataSource::SerialPortDataSource(const SerialPortConfig& config, QObje
         m_timer, &QTimer::timeout,
         this, &SerialPortDataSource::readLoopTimedOut
     );
+
+    connect(
+        m_terminal, &SerialPortTerminalWidget::processLine,
+        this, &SerialPortDataSource::processLine
+    );
 }
 
 SerialPortDataSource::~SerialPortDataSource()
@@ -57,25 +62,34 @@ void SerialPortDataSource::readLoopTimedOut()
     m_readLoopTimeout = true;
 }
 
+void SerialPortDataSource::processLine(const std::string line)
+{
+    m_bufferLock.lockForWrite();
+    parseLineToDeviceData(line, m_devicePointsBuffer);
+    m_bufferLock.unlock();
+}
+
 bool SerialPortDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints)
 {
     devicePoints.clear();
-    bool gotData = false;
-
     m_timer->start(250);
 
     m_readLoopTimeout = false;
     while (m_serial.isOpen() && m_serial.canReadLine() && !m_readLoopTimeout)
     {
-        QByteArray lineByteArray = m_serial.readLine();
-        // qDebug() << QString(lineByteArray);
-        m_terminal->putData(lineByteArray);
-        gotData |= parseLineToDeviceData(lineByteArray.toStdString(), devicePoints);
+        m_terminal->putData(m_serial.readLine());
     }
+
+    m_bufferLock.lockForRead();
+    if (m_devicePointsBuffer.size())
+    {
+        std::swap(devicePoints, m_devicePointsBuffer);
+    }
+    m_bufferLock.unlock();
 
     if (!m_serial.isOpen()) m_widget->deviceDisconnected();
 
-    return gotData;
+    return devicePoints.size();
 }
 
 void SerialPortDataSource::handlePort(SerialPortConfig config)

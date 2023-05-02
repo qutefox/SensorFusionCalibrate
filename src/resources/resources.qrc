@@ -1,26 +1,29 @@
 <RCC>
-    <qresource prefix="/">
-        <file>images/open-black.png</file>
-        <file>images/open-white.png</file>
-        <file>images/process-black.png</file>
-        <file>images/process-white.png</file>
-        <file>images/cancel-white.png</file>
-        <file>images/cancel-black.png</file>
-        <file>images/cancel-darkred.png</file>
-        <file>images/fail-black.png</file>
-        <file>images/fail-darkred.png</file>
-        <file>images/fail-white.png</file>
-        <file>images/config-black.png</file>
-        <file>images/config-white.png</file>
-        <file>images/connect-black.png</file>
-        <file>images/connect-white.png</file>
-        <file>images/close-black.png</file>
-        <file>images/close-white.png</file>
-        <file>images/save-settings-black.png</file>
-        <file>images/save-settings-green.png</file>
-        <file>images/save-settings-white.png</file>
-        <file>usb.ids</file>
-        <file>images/calibrate-black.png</file>
-        <file>images/calibrate-white.png</file>
-    </qresource>
+  <qresource prefix="/">
+    <file>images/reset-black.png</file>
+    <file>images/reset-darkred.png</file>
+    <file>images/reset-white.png</file>
+    <file>images/open-black.png</file>
+    <file>images/open-white.png</file>
+    <file>images/process-black.png</file>
+    <file>images/process-white.png</file>
+    <file>images/cancel-white.png</file>
+    <file>images/cancel-black.png</file>
+    <file>images/cancel-darkred.png</file>
+    <file>images/fail-black.png</file>
+    <file>images/fail-darkred.png</file>
+    <file>images/fail-white.png</file>
+    <file>images/config-black.png</file>
+    <file>images/config-white.png</file>
+    <file>images/connect-black.png</file>
+    <file>images/connect-white.png</file>
+    <file>images/close-black.png</file>
+    <file>images/close-white.png</file>
+    <file>images/save-settings-black.png</file>
+    <file>images/save-settings-green.png</file>
+    <file>images/save-settings-white.png</file>
+    <file>usb.ids</file>
+    <file>images/calibrate-black.png</file>
+    <file>images/calibrate-white.png</file>
+  </qresource>
 </RCC>

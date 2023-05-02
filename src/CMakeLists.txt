@@ -116,19 +116,23 @@ add_executable(SensorFusionCalibrateApp
     app/calibrate.h
     app/calibrate.cpp
 
-    widget/csv_file_control.cpp
+    widget/calibration_result.h
+    widget/calibration_result.cpp
+    widget/calibration_result.ui
+
     widget/csv_file_control.h
+    widget/csv_file_control.cpp
     widget/csv_file_control.ui
 
-    widget/serialport_control.cpp
     widget/serialport_control.h
+    widget/serialport_control.cpp
     widget/serialport_control.ui
 
-    widget/serialport_terminal.cpp
     widget/serialport_terminal.h
+    widget/serialport_terminal.cpp
 
-    widget/main_window.cpp
     widget/main_window.h
+    widget/main_window.cpp
     widget/main_window.ui
 
     resources/resources.qrc

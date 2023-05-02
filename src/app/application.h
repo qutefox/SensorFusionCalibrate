@@ -41,4 +41,6 @@ private:
     void resetTabWidgets();
     void resetResultWidgets();
     void addDataSourceWidget();
+
+    QWidget* getTabByName(const QString& name);
 };

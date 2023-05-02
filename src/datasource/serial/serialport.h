@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <vector>
 
 #include <QString>
 #include <QSerialPort>
@@ -8,9 +9,13 @@
 #include <QComboBox>
 #include <QToolButton>
 #include <QTimer>
+#include <QReadWriteLock>
+
+#include <data/point.h>
 
 #include <datasource/data_source_interface.h>
 #include <datasource/serial/serialport_config.h>
+
 #include <widget/serialport_control.h>
 #include <widget/serialport_terminal.h>
 
@@ -38,6 +43,7 @@ private slots:
     void onSerialReadyRead();
     void onSerialError(QSerialPort::SerialPortError);
     void readLoopTimedOut();
+    void processLine(const std::string line);
 
 private:
     QTimer* m_timer = nullptr;
@@ -46,5 +52,7 @@ private:
     QSerialPort m_serial;
     SerialPortControlWidget* m_widget;
     SerialPortTerminalWidget* m_terminal;
+    std::vector<std::set<Point>> m_devicePointsBuffer;
+    QReadWriteLock m_bufferLock;
 };
 

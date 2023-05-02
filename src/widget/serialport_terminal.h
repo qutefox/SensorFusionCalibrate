@@ -1,12 +1,20 @@
 #pragma once
 
 #include <memory>
-#include <QPlainTextEdit>
+#include <string>
 
-#include "virtual_terminal_emulator/sequencer.h"
-#include "virtual_terminal_emulator/parser/parser.h"
+#include <QGroupBox>
+#include <QWidget>
+#include <QString>
 
-class SerialPortTerminalWidget : public QPlainTextEdit, public vte::ISequenceHandler
+#include <virtual_terminal_emulator/sequencer.h>
+#include <virtual_terminal_emulator/parser/parser.h>
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class SerialPortTerminalWidget; }
+QT_END_NAMESPACE
+
+class SerialPortTerminalWidget : public QGroupBox, public vte::ISequenceHandler
 {
     Q_OBJECT
 
@@ -22,12 +30,17 @@ class SerialPortTerminalWidget : public QPlainTextEdit, public vte::ISequenceHan
 
 public:
     SerialPortTerminalWidget(QWidget *parent = nullptr);
-    virtual ~SerialPortTerminalWidget();
+    virtual ~SerialPortTerminalWidget();\
 
     void putData(const QByteArray& data);
 
+signals:
+    void processLine(const std::string line);
+
 private:
+    Ui::SerialPortTerminalWidget* m_ui = nullptr;
+
     std::shared_ptr<vte::Sequencer> m_seq;
     std::unique_ptr<vte::parser::Parser> m_parser;
-
+    QString m_lineBuffer;
 };

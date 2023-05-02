@@ -3,7 +3,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 
-#include "data_types.h"
+#include <data/data_types.h>
 
 class Point
 {

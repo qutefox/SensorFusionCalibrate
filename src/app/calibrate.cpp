@@ -19,114 +19,22 @@ const Eigen::Matrix<double, 6, 6> Calibrate::preInvertedConstraintMatrix
     {0.0, 0.0, 0.0, 0.0, 0.0, -0.25},
 };
 
-Calibrate::Calibrate(int deviceId, QWidget* parent)
-    : QWidget{ parent }
-    , m_deviceId{ deviceId }
+Calibrate::Calibrate(CalibrationResultWidget* widget)
+    : QObject(nullptr)
+    , m_widget{ widget }
 {
-    QHBoxLayout* biasLayout = new QHBoxLayout();
+    m_widget->clear();
 
-    m_biasLineEditX = new QLineEdit();
-    m_biasLineEditY = new QLineEdit();
-    m_biasLineEditZ = new QLineEdit();
-
-    m_biasLineEditX->setReadOnly(true);
-    m_biasLineEditY->setReadOnly(true);
-    m_biasLineEditZ->setReadOnly(true);
-
-    biasLayout->addWidget(m_biasLineEditX);
-    biasLayout->addWidget(m_biasLineEditY);
-    biasLayout->addWidget(m_biasLineEditZ);
-
-    QGridLayout* gridLayout = new QGridLayout();
-
-    m_transformationMatrixLineEdit11 = new QLineEdit();
-    m_transformationMatrixLineEdit12 = new QLineEdit();
-    m_transformationMatrixLineEdit13 = new QLineEdit();
-
-    m_transformationMatrixLineEdit11->setReadOnly(true);
-    m_transformationMatrixLineEdit12->setReadOnly(true);
-    m_transformationMatrixLineEdit13->setReadOnly(true);
-
-    gridLayout->addWidget(m_transformationMatrixLineEdit11, 1, 1);
-    gridLayout->addWidget(m_transformationMatrixLineEdit12, 1, 2);
-    gridLayout->addWidget(m_transformationMatrixLineEdit13, 1, 3);
-
-    m_transformationMatrixLineEdit21 = new QLineEdit();
-    m_transformationMatrixLineEdit22 = new QLineEdit();
-    m_transformationMatrixLineEdit23 = new QLineEdit();
-
-    m_transformationMatrixLineEdit21->setReadOnly(true);
-    m_transformationMatrixLineEdit22->setReadOnly(true);
-    m_transformationMatrixLineEdit23->setReadOnly(true);
-
-    gridLayout->addWidget(m_transformationMatrixLineEdit21, 2, 1);
-    gridLayout->addWidget(m_transformationMatrixLineEdit22, 2, 2);
-    gridLayout->addWidget(m_transformationMatrixLineEdit23, 2, 3);
-
-    m_transformationMatrixLineEdit31 = new QLineEdit();
-    m_transformationMatrixLineEdit32 = new QLineEdit();
-    m_transformationMatrixLineEdit33 = new QLineEdit();
-
-    m_transformationMatrixLineEdit31->setReadOnly(true);
-    m_transformationMatrixLineEdit32->setReadOnly(true);
-    m_transformationMatrixLineEdit33->setReadOnly(true);
-
-    gridLayout->addWidget(m_transformationMatrixLineEdit31, 3, 1);
-    gridLayout->addWidget(m_transformationMatrixLineEdit32, 3, 2);
-    gridLayout->addWidget(m_transformationMatrixLineEdit33, 3, 3);
-
-    QVBoxLayout* layout = new QVBoxLayout();
-
-    m_biasLabel = new QLabel("Bias");
-    m_transformationMatrixLabel = new QLabel("Transformation Matrix");
-
-    layout->addWidget(m_biasLabel);
-    layout->addLayout(biasLayout);
-    layout->addWidget(m_transformationMatrixLabel);
-    layout->addLayout(gridLayout);
-
-    QGroupBox* groupBox = new QGroupBox(this);
-    groupBox->setTitle("Device " + QString::number(deviceId));
-    groupBox->setLayout(layout);
-
-    setWidgetPrecision(8);
-}
-
-void Calibrate::setWidgetPrecision(int precision)
-{
-    if (precision > 0) m_widgetPrecision = precision;
-}
-
-QString Calibrate::double2QStr(double val)
-{
-    oss.str("");
-    oss << std::setprecision(m_widgetPrecision) << val;
-    return QString::fromStdString(oss.str());
+    connect(
+        widget, &CalibrationResultWidget::resetCalibrationData,
+        this, &Calibrate::reset
+    );
 }
 
 void Calibrate::updateUserInterface()
 {
     m_outputLock.lockForRead();
-
-    const Vector3d& bias = m_result.biasVector;
-    const Matrix3x3d& trMatrix = m_result.transformationMatrix;
-
-    m_biasLineEditX->setText(double2QStr(bias[0]));
-    m_biasLineEditY->setText(double2QStr(bias[1]));
-    m_biasLineEditZ->setText(double2QStr(bias[2]));
-
-    m_transformationMatrixLineEdit11->setText(double2QStr(trMatrix(0, 0)));
-    m_transformationMatrixLineEdit12->setText(double2QStr(trMatrix(0, 1)));
-    m_transformationMatrixLineEdit13->setText(double2QStr(trMatrix(0, 2)));
-
-    m_transformationMatrixLineEdit21->setText(double2QStr(trMatrix(1, 0)));
-    m_transformationMatrixLineEdit22->setText(double2QStr(trMatrix(1, 1)));
-    m_transformationMatrixLineEdit23->setText(double2QStr(trMatrix(1, 2)));
-
-    m_transformationMatrixLineEdit31->setText(double2QStr(trMatrix(2, 0)));
-    m_transformationMatrixLineEdit32->setText(double2QStr(trMatrix(2, 1)));
-    m_transformationMatrixLineEdit33->setText(double2QStr(trMatrix(2, 2)));
-
+    m_widget->update(m_result);
     m_outputLock.unlock();
     emit userInterfaceUpdated();
 }
@@ -169,6 +77,7 @@ void Calibrate::reset()
 
     m_points.clear();
     m_result.reset();
+    m_widget->clear();
 
     m_inputLock.unlock();
     m_outputLock.unlock();
@@ -193,7 +102,7 @@ void Calibrate::calibrate()
     std::size_t i = 0;
     for (const Point& p : m_points)
     {
-        // std::cout << p << std::endl << std::flush;
+        std::cout << p << std::endl << std::flush;
         inputMatrix.col(i++) = p.toVect();
     }
 

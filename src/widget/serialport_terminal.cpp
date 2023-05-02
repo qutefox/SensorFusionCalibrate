@@ -1,20 +1,26 @@
 #include "serialport_terminal.h"
+#include "./ui_serialport_terminal.h"
 
 #include <QScrollBar>
 #include <QApplication>
 #include <QTextCursor>
 
 SerialPortTerminalWidget::SerialPortTerminalWidget(QWidget* parent)
-	: QPlainTextEdit(parent)
+	: QGroupBox(parent)
+	, m_ui{ new Ui::SerialPortTerminalWidget }
 	, m_seq{ std::make_shared<vte::Sequencer>(*this) }
 	, m_parser{ std::make_unique<vte::parser::Parser>(m_seq) }
 {
+	m_ui->setupUi(this);
 
+	// TODO: find a better way to disallow setTextCursor() changes via mouse clicks.
+	m_ui->plainTextEdit->setTextInteractionFlags(Qt::NoTextInteraction);
 }
 
 SerialPortTerminalWidget::~SerialPortTerminalWidget()
 {
-
+	m_parser.reset();
+	m_seq.reset();
 }
 
 void SerialPortTerminalWidget::putData(const QByteArray& data)
@@ -25,27 +31,33 @@ void SerialPortTerminalWidget::putData(const QByteArray& data)
 
 void SerialPortTerminalWidget::backspace()
 {
-	textCursor().deletePreviousChar();
+	m_ui->plainTextEdit->textCursor().deletePreviousChar();
 }
 
 void SerialPortTerminalWidget::moveCursorToNextTab()
 {
-	insertPlainText(QString("\t"));
+	m_ui->plainTextEdit->insertPlainText(QString("\t"));
 }
 
 void SerialPortTerminalWidget::linefeed()
 {
-	QTextCursor tc = textCursor();
+	QTextCursor tc = m_ui->plainTextEdit->textCursor();
 	tc.movePosition(QTextCursor::EndOfLine);
-	setTextCursor(tc);
-	insertPlainText(QString("\n"));
+	m_ui->plainTextEdit->setTextCursor(tc);
+	m_ui->plainTextEdit->insertPlainText(QString("\n"));
+
+	if (!m_lineBuffer.isEmpty())
+	{
+		emit processLine(m_lineBuffer.toStdString());
+		m_lineBuffer.clear();
+	}
 }
 
 void SerialPortTerminalWidget::moveCursorToBeginOfLine()
 {
-	QTextCursor tc = textCursor();
+	QTextCursor tc = m_ui->plainTextEdit->textCursor();
 	tc.movePosition(QTextCursor::StartOfLine);
-	setTextCursor(tc);
+	m_ui->plainTextEdit->setTextCursor(tc);
 }
 
 void SerialPortTerminalWidget::executeControlCode(char controlCode)
@@ -109,7 +121,7 @@ void SerialPortTerminalWidget::processSequence(vte::Sequence const& sequence)
 			case vte::SETWINTITLE:
 				tmpStr = QString::fromStdString(sequence.intermediateCharacters());
 				qDebug() << "serialport_terminal.cpp -> set title: " << tmpStr;
-				// TODO: setTitle(tmpStr);
+				setTitle(tmpStr);
 				break;
 			default:
 				qDebug() << "serialport_terminal.cpp -> process sequence: unhandled seq. " << *funcSpec;
@@ -122,9 +134,10 @@ void SerialPortTerminalWidget::writeText(char32_t codepoint)
 {
 	QChar ch(codepoint);
 	qDebug() << "serialport_terminal.cpp -> writeText: " << ch;
-	insertPlainText(ch);
+	m_ui->plainTextEdit->insertPlainText(ch);
+	m_lineBuffer += ch;
 
-	QScrollBar* bar = verticalScrollBar();
+	QScrollBar* bar = m_ui->plainTextEdit->verticalScrollBar();
     bar->setValue(bar->maximum());
 }
 
@@ -132,8 +145,9 @@ void SerialPortTerminalWidget::writeText(std::string_view codepoints, std::size_
 {
 	QString text = QString::fromUtf8(codepoints.data(), cellCount);
 	qDebug() << "serialport_terminal.cpp -> writeText: " << text;
-	insertPlainText(text);
+	m_ui->plainTextEdit->insertPlainText(text);
+	m_lineBuffer += text;
 
-    QScrollBar* bar = verticalScrollBar();
+    QScrollBar* bar = m_ui->plainTextEdit->verticalScrollBar();
     bar->setValue(bar->maximum());
 }

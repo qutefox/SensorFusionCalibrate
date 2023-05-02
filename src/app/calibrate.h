@@ -2,16 +2,15 @@
 
 #include <set>
 
-#include <QWidget>
-#include <QSet>
+#include <QObject>
 #include <QReadWriteLock>
-#include <QLabel>
-#include <QLineEdit>
 #include <Eigen/Dense>
 
-#include "../data/data_types.h"
-#include "../data/point.h"
-#include "../data/calibration_result.h"
+#include <data/data_types.h>
+#include <data/point.h>
+#include <data/calibration_result.h>
+
+#include <widget/calibration_result.h>
 
 // https://sites.google.com/view/sailboatinstruments1/a-download-magneto-v1-2
 // https://sites.google.com/view/sailboatinstruments1/b-presentation
@@ -23,14 +22,12 @@
  *  After the characteristics of the ellipsoid are established, a correction matrix can be developed.
  */
 
-class Calibrate : public QWidget
+class Calibrate : public QObject
 {
     Q_OBJECT
 
 public:
-    Calibrate(int deviceId, QWidget* parent = nullptr);
-
-    void setWidgetPrecision(int precision);
+    Calibrate(CalibrationResultWidget* widget);
 
 public slots:
     void addPoint(const Point& point);
@@ -52,27 +49,5 @@ private:
     QReadWriteLock m_inputLock;
     QReadWriteLock m_outputLock;
     CalibrationResult m_result;
-
-    QLabel* m_biasLabel;
-    QLineEdit* m_biasLineEditX;
-    QLineEdit* m_biasLineEditY;
-    QLineEdit* m_biasLineEditZ;
-
-    QLabel* m_transformationMatrixLabel;
-    QLineEdit* m_transformationMatrixLineEdit11;
-    QLineEdit* m_transformationMatrixLineEdit12;
-    QLineEdit* m_transformationMatrixLineEdit13;
-    QLineEdit* m_transformationMatrixLineEdit21;
-    QLineEdit* m_transformationMatrixLineEdit22;
-    QLineEdit* m_transformationMatrixLineEdit23;
-    QLineEdit* m_transformationMatrixLineEdit31;
-    QLineEdit* m_transformationMatrixLineEdit32;
-    QLineEdit* m_transformationMatrixLineEdit33;
-
-    std::ostringstream oss;
-    int m_widgetPrecision = 4;
-    int m_deviceId;
-
-    QString double2QStr(double val);
-
+    CalibrationResultWidget* m_widget;
 };
