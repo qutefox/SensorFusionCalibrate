@@ -4,9 +4,11 @@
 
 SerialPortDataSource::SerialPortDataSource(const SerialPortConfig& config, QObject* parent)
     : IDataSource{ parent }
-    , m_timer{ new QTimer(this) }
+    , m_readLoopTimeoutTimer{ new QTimer(this) }
     , m_widget{ new SerialPortControlWidget(config) }
     , m_terminal{ new SerialPortTerminalWidget() }
+    , m_seq{ std::make_shared<vte::Sequencer>(*this) }
+	, m_parser{ std::make_unique<vte::parser::Parser>(m_seq) }
 {
     connect(
         m_widget, &SerialPortControlWidget::handlePort,
@@ -29,20 +31,17 @@ SerialPortDataSource::SerialPortDataSource(const SerialPortConfig& config, QObje
     );
 
     connect(
-        m_timer, &QTimer::timeout,
+        m_readLoopTimeoutTimer, &QTimer::timeout,
         this, &SerialPortDataSource::readLoopTimedOut
-    );
-
-    connect(
-        m_terminal, &SerialPortTerminalWidget::processLine,
-        this, &SerialPortDataSource::processLine
     );
 }
 
 SerialPortDataSource::~SerialPortDataSource()
 {
-    m_timer->stop();
+    m_readLoopTimeoutTimer->stop();
     m_serial.close();
+    m_parser.reset();
+	m_seq.reset();
     delete m_widget;
     delete m_terminal;
 }
@@ -62,22 +61,50 @@ void SerialPortDataSource::readLoopTimedOut()
     m_readLoopTimeout = true;
 }
 
-void SerialPortDataSource::processLine(const std::string line)
+void SerialPortDataSource::executeControlCode(char controlCode)
 {
+    m_terminal->executeControlCode(controlCode);
+
+    if (controlCode != 0x0A) return;
+
     m_bufferLock.lockForWrite();
-    parseLineToDeviceData(line, m_devicePointsBuffer);
+    parseLineToDeviceData(m_lineBuffer.toStdString(), m_devicePointsBuffer);
+    m_lineBuffer.clear();
+    m_bufferLock.unlock();
+}
+
+void SerialPortDataSource::processSequence(vte::Sequence const& sequence)
+{
+	m_terminal->processSequence(sequence);
+}
+
+void SerialPortDataSource::writeText(char32_t codepoint)
+{
+    m_terminal->writeText(codepoint);
+
+    m_bufferLock.lockForWrite();
+    m_lineBuffer += QChar(codepoint);
+    m_bufferLock.unlock();
+}
+
+void SerialPortDataSource::writeText(std::string_view codepoints, std::size_t cellCount)
+{
+    m_terminal->writeText(codepoints, cellCount);
+
+    m_bufferLock.lockForWrite();
+    m_lineBuffer += QString::fromUtf8(codepoints.data(), cellCount);
     m_bufferLock.unlock();
 }
 
 bool SerialPortDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoints)
 {
     devicePoints.clear();
-    m_timer->start(250);
+    m_readLoopTimeoutTimer->start(250);
 
     m_readLoopTimeout = false;
     while (m_serial.isOpen() && m_serial.canReadLine() && !m_readLoopTimeout)
     {
-        m_terminal->putData(m_serial.readLine());
+        m_parser->parseFragment(m_serial.readLine().toStdString());
     }
 
     m_bufferLock.lockForRead();

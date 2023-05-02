@@ -9,6 +9,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
 list(APPEND CMAKE_PREFIX_PATH "C:\\qt-6.5.0-static")
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort)
 qt_standard_project_setup()

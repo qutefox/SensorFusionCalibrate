@@ -66,7 +66,7 @@ QWidget* Application::getTabByName(const QString& name)
     QTabWidget* tabWidget = m_mainWindow->ui()->tabWidget;
     for (std::size_t i = 0; i < tabWidget->count(); ++i)
     {
-        QWidget* tabElementWidget = tabWidget->widget(i);
+        QWidget* tabElementWidget = tabWidget->widget(static_cast<int>(i));
         QString tabName = tabElementWidget->objectName();
         if (tabName == name)
         {
@@ -81,9 +81,9 @@ void Application::addDataSourceWidget()
     QWidget* tabElementWidget = getTabByName("result");
     if (tabElementWidget == nullptr) return;
 
-    std::size_t deviceId = m_calibrators.size()+1;
+    unsigned int deviceId = static_cast<unsigned int>(m_calibrators.size())+1;
     CalibrationResultWidget* resultWidget = new CalibrationResultWidget(deviceId, tabElementWidget);
-    m_calibrators.push_back(std::make_unique<Calibrate>(resultWidget));
+    m_calibrators.push_back(std::make_unique<Calibrate>(deviceId, resultWidget));
     tabElementWidget->layout()->addWidget(resultWidget);
 }
 

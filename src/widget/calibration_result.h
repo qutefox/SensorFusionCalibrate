@@ -19,19 +19,21 @@ class CalibrationResultWidget : public QGroupBox
     QString double2QStr(double val);
 
 public:
-    CalibrationResultWidget(std::size_t deviceId, QWidget *parent = nullptr);
+    CalibrationResultWidget(unsigned int deviceId, QWidget *parent = nullptr);
     virtual ~CalibrationResultWidget();
 
     void setWidgetPrecision(int precision);
-    void setDeviceId(std::size_t deviceId);
+    void setDeviceId(unsigned int deviceId);
     void update(const CalibrationResult& m_result);
     void clear();
 
 signals:
     void resetCalibrationData();
+    void saveCalibrationData();
 
 private slots:
     void resetToolButtonClicked();
+    void saveToolButtonClicked();
 
 private:
     Ui::CalibrationResultWidget* m_ui = nullptr;

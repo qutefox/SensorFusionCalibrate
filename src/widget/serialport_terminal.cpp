@@ -8,8 +8,6 @@
 SerialPortTerminalWidget::SerialPortTerminalWidget(QWidget* parent)
 	: QGroupBox(parent)
 	, m_ui{ new Ui::SerialPortTerminalWidget }
-	, m_seq{ std::make_shared<vte::Sequencer>(*this) }
-	, m_parser{ std::make_unique<vte::parser::Parser>(m_seq) }
 {
 	m_ui->setupUi(this);
 
@@ -19,14 +17,7 @@ SerialPortTerminalWidget::SerialPortTerminalWidget(QWidget* parent)
 
 SerialPortTerminalWidget::~SerialPortTerminalWidget()
 {
-	m_parser.reset();
-	m_seq.reset();
-}
 
-void SerialPortTerminalWidget::putData(const QByteArray& data)
-{
-	qDebug() << "serialport_terminal.cpp -> putData: " << data;
-	m_parser->parseFragment(data.toStdString());
 }
 
 void SerialPortTerminalWidget::backspace()
@@ -45,12 +36,6 @@ void SerialPortTerminalWidget::linefeed()
 	tc.movePosition(QTextCursor::EndOfLine);
 	m_ui->plainTextEdit->setTextCursor(tc);
 	m_ui->plainTextEdit->insertPlainText(QString("\n"));
-
-	if (!m_lineBuffer.isEmpty())
-	{
-		emit processLine(m_lineBuffer.toStdString());
-		m_lineBuffer.clear();
-	}
 }
 
 void SerialPortTerminalWidget::moveCursorToBeginOfLine()
@@ -62,8 +47,6 @@ void SerialPortTerminalWidget::moveCursorToBeginOfLine()
 
 void SerialPortTerminalWidget::executeControlCode(char controlCode)
 {
-	qDebug() << "serialport_terminal.cpp -> execute control code: " << controlCode;
-
 	switch (controlCode)
     {
         case 0x00: // NUL
@@ -120,7 +103,6 @@ void SerialPortTerminalWidget::processSequence(vte::Sequence const& sequence)
 			case vte::SETTITLE:
 			case vte::SETWINTITLE:
 				tmpStr = QString::fromStdString(sequence.intermediateCharacters());
-				qDebug() << "serialport_terminal.cpp -> set title: " << tmpStr;
 				setTitle(tmpStr);
 				break;
 			default:
@@ -133,9 +115,7 @@ void SerialPortTerminalWidget::processSequence(vte::Sequence const& sequence)
 void SerialPortTerminalWidget::writeText(char32_t codepoint)
 {
 	QChar ch(codepoint);
-	qDebug() << "serialport_terminal.cpp -> writeText: " << ch;
 	m_ui->plainTextEdit->insertPlainText(ch);
-	m_lineBuffer += ch;
 
 	QScrollBar* bar = m_ui->plainTextEdit->verticalScrollBar();
     bar->setValue(bar->maximum());
@@ -144,9 +124,7 @@ void SerialPortTerminalWidget::writeText(char32_t codepoint)
 void SerialPortTerminalWidget::writeText(std::string_view codepoints, std::size_t cellCount)
 {
 	QString text = QString::fromUtf8(codepoints.data(), cellCount);
-	qDebug() << "serialport_terminal.cpp -> writeText: " << text;
 	m_ui->plainTextEdit->insertPlainText(text);
-	m_lineBuffer += text;
 
     QScrollBar* bar = m_ui->plainTextEdit->verticalScrollBar();
     bar->setValue(bar->maximum());

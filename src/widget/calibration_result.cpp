@@ -3,7 +3,7 @@
 
 #include <iomanip>
 
-CalibrationResultWidget::CalibrationResultWidget(std::size_t deviceId, QWidget *parent)
+CalibrationResultWidget::CalibrationResultWidget(unsigned int deviceId, QWidget *parent)
     : QGroupBox(parent)
     , m_ui{ new Ui::CalibrationResultWidget }
 {
@@ -12,6 +12,11 @@ CalibrationResultWidget::CalibrationResultWidget(std::size_t deviceId, QWidget *
     connect(
         m_ui->resetToolButton, &QToolButton::clicked,
         this, &CalibrationResultWidget::resetToolButtonClicked
+    );
+
+    connect(
+        m_ui->saveToolButton, &QToolButton::clicked,
+        this, &CalibrationResultWidget::saveToolButtonClicked
     );
 
     setWidgetPrecision(8);
@@ -28,7 +33,12 @@ void CalibrationResultWidget::resetToolButtonClicked()
     emit resetCalibrationData();
 }
 
-void CalibrationResultWidget::setDeviceId(std::size_t deviceId)
+void CalibrationResultWidget::saveToolButtonClicked()
+{
+    emit saveCalibrationData();
+}
+
+void CalibrationResultWidget::setDeviceId(unsigned int deviceId)
 {
     this->setTitle("Device " + QString::number(deviceId));
 }

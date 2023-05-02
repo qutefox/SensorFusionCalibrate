@@ -8,6 +8,8 @@
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QDebug>
+#include <QFile>
+#include <QFileDialog>
 
 const Eigen::Matrix<double, 6, 6> Calibrate::preInvertedConstraintMatrix
 {
@@ -19,15 +21,21 @@ const Eigen::Matrix<double, 6, 6> Calibrate::preInvertedConstraintMatrix
     {0.0, 0.0, 0.0, 0.0, 0.0, -0.25},
 };
 
-Calibrate::Calibrate(CalibrationResultWidget* widget)
+Calibrate::Calibrate(unsigned int deviceId, CalibrationResultWidget* widget)
     : QObject(nullptr)
     , m_widget{ widget }
+    , m_deviceId{ deviceId }
 {
     m_widget->clear();
 
     connect(
         widget, &CalibrationResultWidget::resetCalibrationData,
         this, &Calibrate::reset
+    );
+
+    connect(
+        widget, &CalibrationResultWidget::saveCalibrationData,
+        this, &Calibrate::saveResultToFile
     );
 }
 
@@ -81,6 +89,33 @@ void Calibrate::reset()
 
     m_inputLock.unlock();
     m_outputLock.unlock();
+}
+
+void Calibrate::saveResultToFile()
+{
+    CalibrationResult r;
+    m_outputLock.lockForRead();
+    r = m_result;
+    m_outputLock.unlock();
+
+    QString fileName = QString("%1_result.txt").arg(m_deviceId); // TODO: add folder path from (saved) settings.
+    QString saveFileName = QFileDialog::getSaveFileName(m_widget,
+        "Save File", fileName, "txt files (*.txt)");
+    QFile file(saveFileName);
+    if (file.open(QIODevice::ReadWrite))
+    {
+        QTextStream fstream(&file);
+
+        const Vector3d& bias = r.biasVector;
+        fstream << "bias" << Qt::endl;
+        fstream << bias[0] << "\t" << bias[1] << "\t" << bias[2] << Qt::endl;
+
+        const Matrix3x3d& trMatrix = r.transformationMatrix;
+        fstream << "transformationMatrix" << Qt::endl;
+        fstream << trMatrix(0, 0) << "\t" << trMatrix(0, 1) << "\t" << trMatrix(0, 2) << Qt::endl;
+        fstream << trMatrix(1, 0) << "\t" << trMatrix(1, 1) << "\t" << trMatrix(1, 2) << Qt::endl;
+        fstream << trMatrix(2, 0) << "\t" << trMatrix(2, 1) << "\t" << trMatrix(2, 2) << Qt::endl;
+    }
 }
 
 CalibrationResult Calibrate::getResult()

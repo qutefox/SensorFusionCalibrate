@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="/">
+    <file>images/save-black.png</file>
+    <file>images/save-green.png</file>
+    <file>images/save-white.png</file>
     <file>images/reset-black.png</file>
     <file>images/reset-darkred.png</file>
     <file>images/reset-white.png</file>

@@ -76,7 +76,7 @@
         <bool>true</bool>
        </property>
        <property name="text">
-        <string>Auto connect</string>
+        <string>Auto reconnect</string>
        </property>
       </widget>
      </item>

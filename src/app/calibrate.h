@@ -27,13 +27,14 @@ class Calibrate : public QObject
     Q_OBJECT
 
 public:
-    Calibrate(CalibrationResultWidget* widget);
+    Calibrate(unsigned int deviceId, CalibrationResultWidget* widget);
 
 public slots:
     void addPoint(const Point& point);
     void addPoint(double x, double y, double z);
     void addPoints(const std::set<Point>& points);
     void reset();
+    void saveResultToFile();
     void calibrate();
     void updateUserInterface();
 
@@ -50,4 +51,5 @@ private:
     QReadWriteLock m_outputLock;
     CalibrationResult m_result;
     CalibrationResultWidget* m_widget;
+    unsigned int m_deviceId = 0;
 };
