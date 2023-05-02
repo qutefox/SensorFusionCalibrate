@@ -68,7 +68,7 @@ bool SerialPortDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoi
     while (m_serial.isOpen() && m_serial.canReadLine() && !m_readLoopTimeout)
     {
         QByteArray lineByteArray = m_serial.readLine();
-        qDebug() << QString(lineByteArray);
+        // qDebug() << QString(lineByteArray);
         m_terminal->putData(lineByteArray);
         gotData |= parseLineToDeviceData(lineByteArray.toStdString(), devicePoints);
     }

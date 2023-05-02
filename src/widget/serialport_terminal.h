@@ -15,6 +15,11 @@ class SerialPortTerminalWidget : public QPlainTextEdit, public vte::ISequenceHan
     virtual void writeText(char32_t codepoint) override;
     virtual void writeText(std::string_view codepoints, std::size_t cellCount) override;
 
+    void backspace();
+    void moveCursorToNextTab();
+    void linefeed();
+    void moveCursorToBeginOfLine();
+
 public:
     SerialPortTerminalWidget(QWidget *parent = nullptr);
     virtual ~SerialPortTerminalWidget();

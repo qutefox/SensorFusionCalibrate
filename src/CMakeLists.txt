@@ -82,6 +82,7 @@ add_executable(SensorFusionCalibrateApp
     virtual_terminal_emulator/vt_type.h
     virtual_terminal_emulator/vt_type.cpp
     virtual_terminal_emulator/functions.h
+    virtual_terminal_emulator/functions.cpp
     virtual_terminal_emulator/sequence_parameters.h
     virtual_terminal_emulator/sequence_parameters_builder.h
     virtual_terminal_emulator/sequence.h
