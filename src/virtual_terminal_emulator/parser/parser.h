@@ -5,6 +5,8 @@
 #include <memory>
 #include <string>
 
+#include <fmt/core.h>
+
 #include <gsl/span>
 #include <gsl/span_ext>
 
@@ -38,7 +40,7 @@ namespace vte::parser
         * With respect to text, only up to @c EventListener::maxBulkTextSequenceWidth() UTF-32 codepoints will
         * be processed.
         * */
-        void parseFragment(gsl::span<char const> data);
+        void parseFragment(gsl::span<const char> data);
 
         [[nodiscard]] State state() const noexcept { return m_state; }
 
@@ -67,7 +69,7 @@ namespace vte::parser
 
     /// @returns parsed tuple with OSC code and offset to first data parameter byte.
     template <typename T>
-    inline std::pair<int, size_t> extractCodePrefix(T const& data) noexcept
+    inline std::pair<int, std::size_t> extractCodePrefix(T const& data) noexcept
     {
         int code = 0;
         size_t i = 0;
@@ -88,4 +90,58 @@ namespace vte::parser
         return std::pair { code, i };
     }
 
+    void parserTableDot(std::ostream& os);
+
 } // namespace vte::parser
+
+namespace fmt
+{
+
+template <>
+struct formatter<vte::parser::State>
+{
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx)
+    {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(vte::parser::State state, FormatContext& ctx)
+    {
+        return fmt::format_to(ctx.out(), "{}", vte::parser::to_string(state));
+    }
+};
+
+template <>
+struct formatter<vte::parser::ActionClass>
+{
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx)
+    {
+        return ctx.begin();
+    }
+    template <typename FormatContext>
+    auto format(vte::parser::ActionClass value, FormatContext& ctx)
+    {
+        auto constexpr mappings = std::array<std::string_view, 4> { "Enter", "Event", "Leave", "Transition" };
+        return fmt::format_to(ctx.out(), "{}", mappings.at(static_cast<unsigned>(value)));
+    }
+};
+
+template <>
+struct formatter<vte::parser::Action>
+{
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx)
+    {
+        return ctx.begin();
+    }
+    template <typename FormatContext>
+    auto format(vte::parser::Action value, FormatContext& ctx)
+    {
+        return fmt::format_to(ctx.out(), "{}", vte::parser::to_string(value));
+    }
+};
+
+} // namespace fmt

@@ -2,12 +2,11 @@
 
 #include <datasource/line_parser.h>
 
-constexpr char ESC = '\x1B';
-
 SerialPortDataSource::SerialPortDataSource(const SerialPortConfig& config, QObject* parent)
     : IDataSource{ parent }
     , m_timer{ new QTimer(this) }
     , m_widget{ new SerialPortControlWidget(config) }
+    , m_terminal{ new SerialPortTerminalWidget() }
 {
     connect(
         m_widget, &SerialPortControlWidget::handlePort,
@@ -40,11 +39,17 @@ SerialPortDataSource::~SerialPortDataSource()
     m_timer->stop();
     m_serial.close();
     delete m_widget;
+    delete m_terminal;
 }
 
 QWidget* SerialPortDataSource::widget() const
 {
     return m_widget;
+}
+
+void SerialPortDataSource::makeTabs(QTabWidget* parent) const
+{
+    parent->insertTab(parent->count()+1, m_terminal, QIcon(""), "Terminal");
 }
 
 void SerialPortDataSource::readLoopTimedOut()
@@ -63,8 +68,8 @@ bool SerialPortDataSource::getNextPoints(std::vector<std::set<Point>>& devicePoi
     while (m_serial.isOpen() && m_serial.canReadLine() && !m_readLoopTimeout)
     {
         QByteArray lineByteArray = m_serial.readLine();
-        // TODO: future feature possibility to add a serial terminal.
         qDebug() << QString(lineByteArray);
+        m_terminal->putData(lineByteArray);
         gotData |= parseLineToDeviceData(lineByteArray.toStdString(), devicePoints);
     }
 

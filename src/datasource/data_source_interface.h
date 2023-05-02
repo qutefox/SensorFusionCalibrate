@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QTabWidget>
 #include <QString>
 
 #include <data/point.h>
@@ -21,8 +22,7 @@ public:
     virtual bool canSignalDataAvailable() const { return false; }
     virtual QString getTypeName() const { return ""; }
     virtual QWidget* widget() const = 0;
-    virtual int numberOfTabs() const { return 0; }
-    virtual QWidget* getTab(int tabId) const { return nullptr; }
+    virtual void makeTabs(QTabWidget* parent) const { }
 
 signals:
     void dataSourceStarted();

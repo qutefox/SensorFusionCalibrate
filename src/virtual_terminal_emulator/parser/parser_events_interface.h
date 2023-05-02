@@ -32,7 +32,7 @@ namespace vte::parser
         *
         * @param cellCount reflects the sum of the East Asian Width attribute for all passed codepoints.
         */
-        virtual size_t print(std::string_view chars, size_t cellCount) = 0;
+        virtual void print(std::string_view chars, size_t cellCount) = 0;
 
         /**
         * Returns the number of terminal columns (cells) that are still available in the current line
@@ -41,7 +41,7 @@ namespace vte::parser
         * This accessor is used to determine whether or not bulk text processing can
         * be used or not.
         */
-        [[nodiscard]] virtual size_t maxBulkTextSequenceWidth() const noexcept = 0;
+        [[nodiscard]] virtual std::size_t maxBulkTextSequenceWidth() const noexcept = 0;
 
         /**
         * The C0 or C1 control function should be executed, which may have any one of a variety of
@@ -162,8 +162,8 @@ namespace vte::parser
     public:
         void error(std::string_view const&) override {}
         void print(char32_t) override {}
-        size_t print(std::string_view, size_t) override { return 0; }
-        [[nodiscard]] size_t maxBulkTextSequenceWidth() const noexcept override { return std::numeric_limits<size_t>::max(); }
+        void print(std::string_view, size_t) override {}
+        [[nodiscard]] std::size_t maxBulkTextSequenceWidth() const noexcept override { return std::numeric_limits<size_t>::max(); }
         void execute(char) override {}
         void clear() override {}
         void collect(char) override {}

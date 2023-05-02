@@ -69,6 +69,26 @@ add_executable(SensorFusionCalibrateApp
     virtual_terminal_emulator/parser/parser_action.h
     virtual_terminal_emulator/parser/parser.h
     virtual_terminal_emulator/parser/parser.cpp
+    virtual_terminal_emulator/parser/parser_extension.h
+
+    virtual_terminal_emulator/utils/vt_assert.h
+    virtual_terminal_emulator/utils/vt_boxed.h
+    virtual_terminal_emulator/utils/vt_times.h
+    virtual_terminal_emulator/utils/vt_sort.h
+    virtual_terminal_emulator/utils/vt_escape.h
+    virtual_terminal_emulator/utils/vt_indexed.h
+
+    virtual_terminal_emulator/control_code.h
+    virtual_terminal_emulator/vt_type.h
+    virtual_terminal_emulator/vt_type.cpp
+    virtual_terminal_emulator/functions.h
+    virtual_terminal_emulator/sequence_parameters.h
+    virtual_terminal_emulator/sequence_parameters_builder.h
+    virtual_terminal_emulator/sequence.h
+    virtual_terminal_emulator/sequence.cpp
+    virtual_terminal_emulator/sequence_handler_interface.h
+    virtual_terminal_emulator/sequencer.h
+    virtual_terminal_emulator/sequencer.cpp
 
     datasource/line_parser.h
     datasource/line_parser.cpp
@@ -103,6 +123,9 @@ add_executable(SensorFusionCalibrateApp
     widget/serialport_control.h
     widget/serialport_control.ui
 
+    widget/serialport_terminal.cpp
+    widget/serialport_terminal.h
+
     widget/main_window.cpp
     widget/main_window.h
     widget/main_window.ui
@@ -116,6 +139,7 @@ target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::SerialPort)
 target_link_libraries(SensorFusionCalibrateApp PRIVATE Eigen3::Eigen)
 target_link_libraries(SensorFusionCalibrateApp PRIVATE Microsoft.GSL::GSL)
 target_link_libraries(SensorFusionCalibrateApp PRIVATE unicode::core)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE fmt::fmt)
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(SensorFusionCalibrateApp)

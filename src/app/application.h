@@ -37,7 +37,8 @@ private:
     std::vector<std::unique_ptr<Calibrate>> m_calibrators;
 
     void selectDataSource(const QString& value);
-    void removeCalibrateWidgets();
     void removeDataSourceWidgets();
+    void resetTabWidgets();
+    void resetResultWidgets();
     void addDataSourceWidget();
 };

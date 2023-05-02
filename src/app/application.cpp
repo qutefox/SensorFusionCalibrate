@@ -34,7 +34,7 @@ Application::Application(int argc, char *argv[])
 
 Application::~Application()
 {
-    removeCalibrateWidgets();
+    resetTabWidgets();
     removeDataSourceWidgets();
 }
 
@@ -71,18 +71,38 @@ void Application::addDataSourceWidget()
     tabLayout->addWidget(calibratorWidget);
 }
 
-void Application::removeCalibrateWidgets()
+void Application::resetResultWidgets()
 {
-    QWidget* tabWidget = m_mainWindow->ui()->tabWidget->widget(0);
-    QVBoxLayout* tabLayout = qobject_cast<QVBoxLayout*>(tabWidget->layout());
-
-    for (auto& c : m_calibrators)
+    QTabWidget* tabWidget = m_mainWindow->ui()->tabWidget;
+    for (int i = 0; i < tabWidget->count(); i++)
     {
-        tabLayout->removeWidget(c.get());
-        c->reset();
-    }
+        QWidget* tabElementWidget = tabWidget->widget(i);
+        QString tabName = tabElementWidget->objectName();
+        if (tabName == "result")
+        {
+            tabElementWidget->setUpdatesEnabled(false);
+            qDeleteAll(tabElementWidget->findChildren<QWidget*>("", Qt::FindDirectChildrenOnly));
+            tabElementWidget->setUpdatesEnabled(true);
 
-    m_calibrators.clear();
+            m_calibrators.clear();
+
+            break;
+        }
+    }
+}
+
+void Application::resetTabWidgets()
+{
+    resetResultWidgets();
+
+    QTabWidget* tabWidget = m_mainWindow->ui()->tabWidget;
+    for (int i = 0; i < tabWidget->count(); i++)
+    {
+        QWidget* tabElementWidget = tabWidget->widget(i);
+        QString tabName = tabElementWidget->objectName();
+        if (tabName == "result") continue;
+        tabWidget->removeTab(i);
+    }
 }
 
 void Application::selectDataSource(const QString& value)
@@ -99,6 +119,7 @@ void Application::dataSourceChanged(QString dataSourceName)
     QHBoxLayout* dataSourceLayout = qobject_cast<QHBoxLayout*>(dataSourceWidget->layout());
 
     removeDataSourceWidgets();
+    resetTabWidgets();
 
     if (dataSourceName == CSVFileDataSource::getName())
     {
@@ -112,6 +133,7 @@ void Application::dataSourceChanged(QString dataSourceName)
     if (m_dataSource)
     {
         dataSourceLayout->addWidget(m_dataSource->widget());
+        m_dataSource->makeTabs(m_mainWindow->ui()->tabWidget);
 
         connect(
             m_dataSource.get(), &IDataSource::dataSourceStarted,
@@ -139,7 +161,7 @@ void Application::dataSourceStarted()
 {
     if (!m_dataSource) return;
 
-    removeCalibrateWidgets();
+    resetResultWidgets();
 
     if (m_dataSource->isStream() && !m_dataSource->canSignalDataAvailable())
     {

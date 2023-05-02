@@ -12,6 +12,7 @@
 #include <datasource/data_source_interface.h>
 #include <datasource/serial/serialport_config.h>
 #include <widget/serialport_control.h>
+#include <widget/serialport_terminal.h>
 
 class SerialPortDataSource : public IDataSource
 {
@@ -22,11 +23,12 @@ public:
     virtual ~SerialPortDataSource();
 
     static QString getName() { return "Serial Port"; }
-    bool getNextPoints(std::vector<std::set<Point>>& points) override;
-    bool isStream() const override { return true; }
-    bool canSignalDataAvailable() const override { return true; }
-    QString getTypeName() const override { return "serial"; }
-    QWidget* widget() const override;
+    virtual bool getNextPoints(std::vector<std::set<Point>>& points) override;
+    virtual bool isStream() const override { return true; }
+    virtual bool canSignalDataAvailable() const override { return true; }
+    virtual QString getTypeName() const override { return "serial"; }
+    virtual QWidget* widget() const override;
+    virtual void makeTabs(QTabWidget* parent) const override;
 
 public slots:
     void handlePort(SerialPortConfig);
@@ -43,6 +45,6 @@ private:
     bool m_escapeSequenceFound = false;
     QSerialPort m_serial;
     SerialPortControlWidget* m_widget;
-
+    SerialPortTerminalWidget* m_terminal;
 };
 
