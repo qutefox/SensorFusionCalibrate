@@ -9,11 +9,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 list(APPEND CMAKE_PREFIX_PATH "C:\\qt-6.5.0-static")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort OpenGL OpenGLWidgets)
 qt_standard_project_setup()
 
 # enable FetchContent
@@ -64,6 +65,8 @@ add_executable(SensorFusionCalibrateApp
     data/data_types.h
     data/point.h
     data/point.cpp
+    data/quaternion.h
+    data/quaternion.cpp
     data/calibration_result.h
     data/calibration_result.cpp
 
@@ -138,12 +141,18 @@ add_executable(SensorFusionCalibrateApp
     widget/main_window.cpp
     widget/main_window.ui
 
+    widget/visualize.h
+    widget/visualize.cpp
+
     resources/resources.qrc
 )
 
 target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::Core)
 target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::Widgets)
 target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::SerialPort)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::OpenGL)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE Qt6::OpenGLWidgets)
+target_link_libraries(SensorFusionCalibrateApp PRIVATE ${OPENGL_LIBRARIES})
 target_link_libraries(SensorFusionCalibrateApp PRIVATE Eigen3::Eigen)
 target_link_libraries(SensorFusionCalibrateApp PRIVATE Microsoft.GSL::GSL)
 target_link_libraries(SensorFusionCalibrateApp PRIVATE unicode::core)

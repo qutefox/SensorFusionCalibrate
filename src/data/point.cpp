@@ -28,6 +28,35 @@ Vector10d Point::toVect() const
     return v;
 }
 
+Point Point::rotate(const Matrix3x3d& rMatrix) const
+{
+    Point out;
+
+    out.m_x = m_x * rMatrix(0, 0) + m_y * rMatrix(0, 1) + m_z * rMatrix(0, 2);
+	out.m_y = m_x * rMatrix(1, 0) + m_y * rMatrix(1, 1) + m_z * rMatrix(1, 2);
+	out.m_z = m_x * rMatrix(2, 0) + m_y * rMatrix(2, 1) + m_z * rMatrix(2, 2);
+
+    return out;
+}
+
+Point Point::applyCalibration(const CalibrationResult& cr)
+{
+    const Vector3d& bias = cr.biasVector;
+    const Matrix3x3d& trMatrix = cr.transformationMatrix;
+
+    Point out;
+
+	out.m_x = m_x - bias[0];
+	out.m_y = m_y - bias[1];
+	out.m_z = m_z - bias[2];
+
+	out.m_x = out.m_x * trMatrix(0, 0) + out.m_y * trMatrix(0, 1) + out.m_z * trMatrix(0, 2);
+	out.m_y = out.m_x * trMatrix(1, 0) + out.m_y * trMatrix(1, 1) + out.m_z * trMatrix(1, 2);
+	out.m_z = out.m_x * trMatrix(2, 0) + out.m_y * trMatrix(2, 1) + out.m_z * trMatrix(2, 2);
+
+    return out;
+}
+
 const double& Point::getX() const
 {
     return m_x;

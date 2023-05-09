@@ -7,6 +7,7 @@ SerialPortDataSource::SerialPortDataSource(const SerialPortConfig& config, QObje
     , m_readLoopTimeoutTimer{ new QTimer(this) }
     , m_widget{ new SerialPortControlWidget(config) }
     , m_terminal{ new SerialPortTerminalWidget() }
+    , m_visualize{ new VisualizeWidget(m_widget) }
     , m_seq{ std::make_shared<vte::Sequencer>(*this) }
 	, m_parser{ std::make_unique<vte::parser::Parser>(m_seq) }
 {
@@ -54,6 +55,7 @@ QWidget* SerialPortDataSource::widget() const
 void SerialPortDataSource::makeTabs(QTabWidget* parent) const
 {
     parent->insertTab(parent->count()+1, m_terminal, QIcon(""), "Terminal");
+    parent->insertTab(parent->count()+1, m_visualize, QIcon(""), "Visual");
 }
 
 void SerialPortDataSource::readLoopTimedOut()

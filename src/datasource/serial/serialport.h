@@ -22,6 +22,7 @@
 
 #include <widget/serialport_control.h>
 #include <widget/serialport_terminal.h>
+#include <widget/visualize.h>
 
 class SerialPortDataSource : public IDataSource, public vte::ISequenceHandler
 {
@@ -60,6 +61,7 @@ private:
     QSerialPort m_serial;
     SerialPortControlWidget* m_widget;
     SerialPortTerminalWidget* m_terminal;
+    VisualizeWidget* m_visualize;
 
     std::shared_ptr<vte::Sequencer> m_seq;
     std::unique_ptr<vte::parser::Parser> m_parser;

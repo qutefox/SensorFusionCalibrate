@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 
 #include <data/data_types.h>
+#include <data/calibration_result.h>
 
 class Point
 {
@@ -12,6 +13,8 @@ public:
     Point(double x, double y, double z);
 
     Vector10d toVect() const;
+    Point rotate(const Matrix3x3d& rMatrix) const;
+    Point applyCalibration(const CalibrationResult& cr);
 
     const double& getX() const;
     const double& getY() const;
